@@ -41,19 +41,19 @@
         <project.reporting.outputEncoding>${project.encoding}</project.reporting.outputEncoding>
 
         <!-- Runtime deps -->
-        <jsoup.version>1.17.2</jsoup.version>
-        <typemap.version>2025.09.2660710</typemap.version>
+        <jsoup.version>1.21.2</jsoup.version>
+        <typemap.version>2025.11.3050708</typemap.version>
 
         <!-- Test deps -->
-        <junit.version>6.0.0</junit.version>
-        <assertj.version>3.26.0</assertj.version>
-        <junit-platform-launcher.version>6.0.0</junit-platform-launcher.version>
+        <junit.version>6.0.1</junit.version>
+        <assertj.version>3.27.6</assertj.version>
+        <junit-platform-launcher.version>6.0.1</junit-platform-launcher.version>
 
         <!-- Build plugins -->
-        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
-        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
-        <native-maven-plugin.version>0.10.2</native-maven-plugin.version>
+        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+        <maven-jar-plugin.version>3.5.0</maven-jar-plugin.version>
+        <native-maven-plugin.version>0.11.3</native-maven-plugin.version>
     </properties>
 
     <dependencies>
