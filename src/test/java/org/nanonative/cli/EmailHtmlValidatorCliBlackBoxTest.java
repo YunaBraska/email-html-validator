@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -140,6 +141,71 @@ class EmailHtmlValidatorCliBlackBoxTest {
     }
 
     @Test
+    void shouldHonorEnvironmentVariables() {
+        var env = Map.of(
+                "EHV_HELP", "true",
+                "EHV_OUTPUT_DIR", "reports",
+                "EHV_NO_BFSG", "true",
+                "EHV_BFSG_TAGS", "wcag2aa,best-practice"
+        );
+        var options = EmailHtmlValidatorCli.parseOptions(new String[]{"<html></html>"}, env);
+        assertThat(options.asBooleanOpt("help")).contains(true);
+        assertThat(options.asStringOpt("outputDir")).contains("reports");
+        assertThat(options.asBooleanOpt("bfsg")).contains(false);
+        assertThat(options.asList(String.class, "bfsgTags"))
+                .containsExactly("wcag2aa", "best-practice");
+    }
+
+    @Test
+    void shouldWriteGithubOutputs(final TestInfo info) throws IOException {
+        var dir = reportDir(info);
+        var ghOutput = Files.createTempFile(workspace, "gh-", ".txt");
+        var env = Map.of(
+                "EHV_OUTPUT_DIR", dir.toString(),
+                "GITHUB_OUTPUT", ghOutput.toString()
+        );
+        runCliWithStatus(0, env, "<html><body><p>cli</p></body></html>");
+        var content = Files.readString(ghOutput, StandardCharsets.UTF_8);
+        assertThat(content).contains("accepted=");
+        assertThat(content).contains("report_json=" + dir.resolve("report.json").toAbsolutePath());
+        assertThat(content).contains("bfsg_issues=");
+        assertThat(content).contains("report_html=" + dir.resolve("report.html").toAbsolutePath());
+        assertThat(content).contains("report_md=" + dir.resolve("report.md").toAbsolutePath());
+        assertThat(content).contains("report_xml=" + dir.resolve("report.xml").toAbsolutePath());
+    }
+
+    @Test
+    void shouldWriteGithubSummary(final TestInfo info) throws IOException {
+        var dir = reportDir(info);
+        var summaryFile = Files.createTempFile(workspace, "summary-", ".md");
+        var env = Map.of(
+                "EHV_OUTPUT_DIR", dir.toString(),
+                "EHV_SUMMARY", "true",
+                "GITHUB_STEP_SUMMARY", summaryFile.toString()
+        );
+        runCliWithStatus(0, env, "--github-summary", "<html><body><p>summary</p></body></html>");
+        var content = Files.readString(summaryFile, StandardCharsets.UTF_8);
+        assertThat(content).contains("Email HTML Validator Report");
+    }
+
+    @Test
+    void shouldRickrollOnDemand(final TestInfo info) {
+        var dir = reportDir(info);
+        var output = runCli(dir, "rick=1", "<html><body><p>prank</p></body></html>");
+        assertThat(output).contains("Never gonna give you up.");
+        var report = readJson(dir.resolve("report.json"));
+        assertThat(report.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL)).contains("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+    }
+
+    @Test
+    void shouldCelebrateUnicorns(final TestInfo info) {
+        var dir = reportDir(info);
+        var env = Map.of("EHV_BFSG_TAGS", "unicorn");
+        var output = runCliWithEnv(dir, env, "<html><body><p>sparkle</p></body></html>");
+        assertThat(output).contains("Unicorn Labs");
+    }
+
+    @Test
     void shouldEvaluateMediaQueries(final TestInfo info) {
         var dir = reportDir(info);
         var template = """
@@ -205,8 +271,12 @@ class EmailHtmlValidatorCliBlackBoxTest {
         var dir = reportDir(info);
         var output = runCli(dir, "<div style='color:black;'></div>");
         assertConsole(output, 3, "100.00", "0.00", "0.00");
+        assertThat(output).contains("BFSG compliance: pass");
         var report = assertReport(dir, percentage("100.00"), percentage("0.00"), percentage("0.00"));
         assertThat(report.asMap(HtmlValidator.FIELD_PARTIAL_NOTES).keySet()).doesNotContain("tag:body");
+        assertThat(report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS)).contains("pass");
+        assertThat(report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT)).contains(0L);
+        assertThat(report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES)).isEmpty();
     }
 
     @Test
@@ -234,6 +304,18 @@ class EmailHtmlValidatorCliBlackBoxTest {
         assertThat(issues).isNotEmpty();
         assertThat(issues.stream().anyMatch(issue -> issue.contains("img"))).isTrue();
         assertThat(issues.stream().anyMatch(issue -> issue.contains("link"))).isTrue();
+    }
+
+    @Test
+    void shouldLimitBfsgRulesViaTags(final TestInfo info) {
+        var dir = reportDir(info);
+        var html = "<html><body><img src='hero.png'><button></button></body></html>";
+        var output = runCli(dir, "--bfsg-tags", "wcag2a,best-practice", html);
+        assertThat(output).contains("BFSG compliance:");
+        var report = readJson(dir.resolve("report.json"));
+        assertThat(report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS).isPresent()).isTrue();
+        assertThat(report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).isPresent()).isTrue();
+        assertThat(report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES)).isNotEmpty();
     }
 
     @Test
@@ -272,12 +354,27 @@ class EmailHtmlValidatorCliBlackBoxTest {
         return capture[0] + capture[1];
     }
 
+    private String runCliWithEnv(final Path outputDir, final Map<String, String> env, final String... args) {
+        var merged = new String[args.length + 2];
+        merged[0] = "--output-dir";
+        merged[1] = outputDir.toString();
+        System.arraycopy(args, 0, merged, 2, args.length);
+        var capture = runCliWithStatus(0, env, merged);
+        return capture[0] + capture[1];
+    }
+
     private String[] runCliWithStatus(final int expectedStatus, final String... args) {
+        return runCliWithStatus(expectedStatus, Map.of(), args);
+    }
+
+    private String[] runCliWithStatus(final int expectedStatus, final Map<String, String> env, final String... args) {
         var stdout = new ByteArrayOutputStream();
         var stderr = new ByteArrayOutputStream();
         try (var outPrinter = new PrintStream(stdout, true, StandardCharsets.UTF_8);
              var errPrinter = new PrintStream(stderr, true, StandardCharsets.UTF_8)) {
-            var status = EmailHtmlValidatorCli.execute(args, outPrinter, errPrinter);
+            var status = env.isEmpty()
+                    ? EmailHtmlValidatorCli.execute(args, outPrinter, errPrinter)
+                    : EmailHtmlValidatorCli.execute(args, env, outPrinter, errPrinter);
             assertThat(status).isEqualTo(expectedStatus);
         }
         return new String[]{

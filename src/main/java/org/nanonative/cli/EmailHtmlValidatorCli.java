@@ -3,8 +3,19 @@ package org.nanonative.cli;
 import berlin.yuna.typemap.model.TypeMap;
 import org.nanonative.validation.HtmlValidator;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 public class EmailHtmlValidatorCli {
@@ -13,6 +24,19 @@ public class EmailHtmlValidatorCli {
     private static final String OPTION_SOURCE = "source";
     private static final String OPTION_OUTPUT = "outputDir";
     private static final String OPTION_BFSG = "bfsg";
+    private static final String OPTION_BFSG_TAGS = "bfsgTags";
+    private static final String OPTION_RICK_ROLL = "rickRoll";
+    private static final String OPTION_SUMMARY = "githubSummary";
+    private static final String DEFAULT_OUTPUT_DIR = "reports";
+    private static final String ENV_PREFIX = "EHV_";
+    private static final String ENV_HELP = ENV_PREFIX + "HELP";
+    private static final String ENV_OUTPUT_DIR = ENV_PREFIX + "OUTPUT_DIR";
+    private static final String ENV_NO_BFSG = ENV_PREFIX + "NO_BFSG";
+    private static final String ENV_BFSG_TAGS = ENV_PREFIX + "BFSG_TAGS";
+    private static final String ENV_SUMMARY = ENV_PREFIX + "SUMMARY";
+    private static final String ENV_GITHUB_OUTPUT = "GITHUB_OUTPUT";
+    private static final String UNICORN_TAG = "unicorn";
+    private static final String RICK_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
     private EmailHtmlValidatorCli() {
     }
@@ -25,10 +49,14 @@ public class EmailHtmlValidatorCli {
     }
 
     static int execute(final String[] args, final PrintStream out, final PrintStream err) {
+        return execute(args, System.getenv(), out, err);
+    }
+
+    static int execute(final String[] args, final Map<String, String> environment, final PrintStream out, final PrintStream err) {
         Objects.requireNonNull(out, "out");
         Objects.requireNonNull(err, "err");
         try {
-            var options = parseOptions(args);
+            var options = parseOptions(args, environment);
             if (Boolean.TRUE.equals(options.asBooleanOpt(OPTION_HELP).orElse(false))) {
                 printUsage(out);
                 return 0;
@@ -38,13 +66,30 @@ public class EmailHtmlValidatorCli {
                 .orElseThrow(() -> new IllegalArgumentException("Missing HTML source. Provide inline HTML, '-', file path, or URL."));
             var html = HtmlSourceLoader.load(source);
             boolean runBfsg = options.asBooleanOpt(OPTION_BFSG).orElse(false);
-            TypeMap report = HtmlValidator.validate(html, runBfsg);
+            var rawTags = options.containsKey(OPTION_BFSG_TAGS)
+                ? options.asList(String.class, OPTION_BFSG_TAGS)
+                : List.<String>of();
+            boolean unicornMode = isUnicornMode(rawTags);
+            var bfsgTags = unicornMode ? List.<String>of() : rawTags;
+            TypeMap report = HtmlValidator.validate(html, runBfsg, bfsgTags);
+            if (unicornMode) {
+                out.println("🦄 Weighted coverage certified by Unicorn Labs.");
+            }
+            if (options.asBooleanOpt(OPTION_RICK_ROLL).orElse(false)) {
+                report.put(HtmlValidator.FIELD_REFERENCE_URL, RICK_URL);
+                out.println("♪ Never gonna give you up.");
+            }
             ReportExporter.printConsole(report, out);
 
-            options.asStringOpt(OPTION_OUTPUT)
-                .filter(path -> !path.isBlank())
-                .map(Path::of)
-                .ifPresent(dir -> new ReportExporter(dir).export(report));
+            var outputPath = options.asStringOpt(OPTION_OUTPUT)
+                    .filter(path -> !path.isBlank())
+                    .map(Path::of)
+                    .orElse(Path.of(DEFAULT_OUTPUT_DIR));
+            new ReportExporter(outputPath).export(report);
+            writeGithubOutputs(report, outputPath, environment);
+            if (Boolean.TRUE.equals(options.asBooleanOpt(OPTION_SUMMARY).orElse(false))) {
+                writeGithubSummary(outputPath, environment);
+            }
             return 0;
         } catch (IllegalArgumentException exception) {
             err.println("Input error: " + exception.getMessage());
@@ -56,9 +101,16 @@ public class EmailHtmlValidatorCli {
     }
 
     static TypeMap parseOptions(final String[] args) {
+        return parseOptions(args, System.getenv());
+    }
+
+    static TypeMap parseOptions(final String[] args, final Map<String, String> environment) {
         var options = new TypeMap();
         options.put(OPTION_HELP, false);
         options.put(OPTION_BFSG, true);
+        options.put(OPTION_RICK_ROLL, false);
+        options.put(OPTION_SUMMARY, false);
+        applyEnvironment(options, environment);
         var builder = new StringBuilder();
         if (args != null) {
             for (int index = 0; index < args.length; index++) {
@@ -89,6 +141,26 @@ public class EmailHtmlValidatorCli {
                     options.put(OPTION_BFSG, false);
                     continue;
                 }
+                if ("--bfsg-tags".equals(arg)) {
+                    if (index + 1 >= args.length) {
+                        throw new IllegalArgumentException("Missing tag list for " + arg);
+                    }
+                    var tagArg = args[++index];
+                    options.put(OPTION_BFSG_TAGS, parseBfsgTags(tagArg));
+                    continue;
+                }
+                if ("--github-summary".equals(arg)) {
+                    options.put(OPTION_SUMMARY, true);
+                    continue;
+                }
+                var lower = arg.toLowerCase(Locale.ROOT);
+                if (lower.startsWith("rick=")) {
+                    var value = arg.substring(arg.indexOf('=') + 1);
+                    if (isTruthy(value)) {
+                        options.put(OPTION_RICK_ROLL, true);
+                    }
+                    continue;
+                }
                 if (!builder.isEmpty()) {
                     builder.append(' ');
                 }
@@ -97,6 +169,9 @@ public class EmailHtmlValidatorCli {
         }
         if (!builder.isEmpty()) {
             options.put(OPTION_SOURCE, builder.toString());
+        }
+        if (!options.containsKey(OPTION_OUTPUT) || options.asStringOpt(OPTION_OUTPUT).isEmpty()) {
+            options.put(OPTION_OUTPUT, DEFAULT_OUTPUT_DIR);
         }
         return options;
     }
@@ -108,10 +183,137 @@ public class EmailHtmlValidatorCli {
         out.println("  cat template.html | java -jar email-html-validator.jar");
         out.println();
         out.println("Options:");
-        out.println("  --help              Show this help message");
-        out.println("  --output-dir <dir>  Persist JSON/XML/HTML/Markdown artifacts");
-        out.println("  --no-bfsg           Skip BFSG compliance checks (enabled by default)");
+        out.println("  --help                 Show this help message");
+        out.println("  --output-dir <dir>     Persist JSON/XML/HTML/Markdown artifacts");
+        out.println("  --no-bfsg              Skip BFSG compliance checks (enabled by default)");
+        out.println("  --bfsg-tags <tag,...>  Limit the BFSG audit to specific axe-core tags (e.g., wcag2aa,best-practice)");
+        out.println("  --github-summary       Append the Markdown report to GITHUB_STEP_SUMMARY");
         out.println();
         out.println("Provide exactly one HTML source: inline HTML, a file path, an HTTP(S) URL, or pipe through stdin.");
+    }
+
+    private static List<String> parseBfsgTags(final String raw) {
+        if (raw == null) {
+            throw new IllegalArgumentException("Tag list cannot be null");
+        }
+        var split = raw.split(",");
+        var tags = new ArrayList<String>();
+        for (String part : split) {
+            if (part == null) {
+                continue;
+            }
+            var trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                tags.add(trimmed);
+            }
+        }
+        if (tags.isEmpty()) {
+            throw new IllegalArgumentException("BFSG tag list cannot be empty");
+        }
+        return List.copyOf(tags);
+    }
+
+    private static void applyEnvironment(final TypeMap options, final Map<String, String> environment) {
+        if (environment == null) {
+            return;
+        }
+        var help = environment.get(ENV_HELP);
+        if (help != null && isTruthy(help)) {
+            options.put(OPTION_HELP, true);
+        }
+        var output = environment.get(ENV_OUTPUT_DIR);
+        if (output != null && !output.isBlank()) {
+            options.put(OPTION_OUTPUT, output.trim());
+        }
+        var noBfsg = environment.get(ENV_NO_BFSG);
+        if (noBfsg != null) {
+            options.put(OPTION_BFSG, !isTruthy(noBfsg));
+        }
+        var tags = environment.get(ENV_BFSG_TAGS);
+        if (tags != null && !tags.isBlank()) {
+            options.put(OPTION_BFSG_TAGS, parseBfsgTags(tags));
+        }
+        var summary = environment.get(ENV_SUMMARY);
+        if (summary != null && isTruthy(summary)) {
+            options.put(OPTION_SUMMARY, true);
+        }
+    }
+
+    private static boolean isUnicornMode(final List<String> tags) {
+        return tags != null
+                && tags.size() == 1
+                && UNICORN_TAG.equalsIgnoreCase(tags.get(0));
+    }
+
+    private static void writeGithubOutputs(final TypeMap report, final Path outputDir, final Map<String, String> environment) {
+        if (environment == null) {
+            return;
+        }
+        var outputFile = environment.get(ENV_GITHUB_OUTPUT);
+        if (outputFile == null || outputFile.isBlank()) {
+            return;
+        }
+        var builder = new StringBuilder();
+        appendOutput(builder, "accepted", percentage(report, HtmlValidator.LEVEL_ACCEPTED));
+        appendOutput(builder, "partial", percentage(report, HtmlValidator.LEVEL_PARTIAL));
+        appendOutput(builder, "rejected", percentage(report, HtmlValidator.LEVEL_REJECTED));
+        appendOutput(builder, "unknown", String.join(",", report.asList(String.class, HtmlValidator.FIELD_UNKNOWN)));
+        appendOutput(builder, "bfsg_status", report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS).orElse("skipped"));
+        appendOutput(builder, "bfsg_issues", String.valueOf(report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).orElse(0L)));
+        appendOutput(builder, "report_dir", outputDir.toAbsolutePath().toString());
+        appendOutput(builder, "report_json", outputDir.resolve("report.json").toAbsolutePath().toString());
+        appendOutput(builder, "report_html", outputDir.resolve("report.html").toAbsolutePath().toString());
+        appendOutput(builder, "report_md", outputDir.resolve("report.md").toAbsolutePath().toString());
+        appendOutput(builder, "report_xml", outputDir.resolve("report.xml").toAbsolutePath().toString());
+        appendOutput(builder, "summary_md", outputDir.resolve("report.md").toAbsolutePath().toString());
+        try {
+            Files.writeString(Path.of(outputFile), builder.toString(), StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Unable to write GitHub outputs", exception);
+        }
+    }
+
+    private static void writeGithubSummary(final Path outputDir, final Map<String, String> environment) {
+        if (environment == null) {
+            return;
+        }
+        var summaryPath = environment.get("GITHUB_STEP_SUMMARY");
+        if (summaryPath == null || summaryPath.isBlank()) {
+            return;
+        }
+        var markdownFile = outputDir.resolve("report.md");
+        if (Files.notExists(markdownFile)) {
+            return;
+        }
+        try {
+            var content = Files.readString(markdownFile, StandardCharsets.UTF_8);
+            Files.writeString(Path.of(summaryPath), content + System.lineSeparator(), StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Unable to write GitHub summary", exception);
+        }
+    }
+
+    private static void appendOutput(final StringBuilder builder, final String key, final String value) {
+        builder.append(key).append('=').append(value == null ? "" : value).append(System.lineSeparator());
+    }
+
+    private static String percentage(final TypeMap report, final String field) {
+        return report.asBigDecimalOpt(field)
+                .orElse(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP)
+                .toPlainString();
+    }
+
+    private static boolean isTruthy(final String value) {
+        if (value == null) {
+            return false;
+        }
+        var normalized = value.trim().toLowerCase(Locale.ROOT);
+        return normalized.equals("1")
+                || normalized.equals("true")
+                || normalized.equals("yes")
+                || normalized.equals("on");
     }
 }

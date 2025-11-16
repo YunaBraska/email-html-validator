@@ -7,7 +7,7 @@ on:
         description: "[ref] branch/tag/commit to checkout"
         required: false
       version:
-        description: "[version] overrides the detected project version"
+        description: "[version] e.g. 1.0.0"
         required: false
   workflow_call:
     inputs:
@@ -25,61 +25,70 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+      - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
+        uses: actions/checkout@main
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
           token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
       - name: "🔍 Read Java Info"
-        id: java_info
+        id: "java_info"
         uses: YunaBraska/java-info-action@main
-      - name: "☕ Setup Java"
-        uses: actions/setup-java@v4
+      - name: "☕ Setup Java [${{ steps.java_info.outputs.java_version }}] Builder [${{ steps.java_info.outputs.builder_name }}] [${{ steps.java_info.outputs.builder_version }}]"
+        uses: actions/setup-java@main
         with:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'temurin'
-      - name: "🏗️ Build jar"
-        run: ${{ steps.java_info.outputs.cmd_build }}
-      - name: "📝 Prepare artifact"
-        id: artifact
+      - name: "🏗️ Build [jar]"
         run: |
+          ${{ steps.java_info.outputs.cmd_build }}
+      - name: "📝 Set filename ${{ github.event.repository.name }}-${{steps.java_info.outputs.java_version}}-${{ inputs.version || steps.java_info.outputs.project_version }}.jar"
+        id: "artifact"
+        run: |
+          echo "########## LIST    ##########"
+          docker buildx ls
+          echo "########## INSPECT ##########"
+          docker buildx inspect --bootstrap | grep Platforms | while read -r line; do echo "${line#*:}"; done | tr -d '[:space:]' || true
+          echo "########## SAVE    ##########"
           filename=$(echo "${{ github.event.repository.name }}-${{steps.java_info.outputs.java_version}}-${{ inputs.version || steps.java_info.outputs.project_version }}.jar" | tr '[:upper:]' '[:lower:]')
+          echo "filename [${filename}]"
           echo "filename=${filename}" >> $GITHUB_OUTPUT
-          build=$(ls target/*.jar | head -n1)
-          mv "${build}" "${filename}"
-          chmod +x "${filename}"
-      - name: "💼 Upload jar"
+          ls -lah
+          mv target/${{ github.event.repository.name }}.jar ${filename}
+          chmod +x ${filename}
+          ls -lah
+      - name: "💼 Save [${{ steps.artifact.outputs.filename }}] Artifact"
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
-          if-no-files-found: error
-
+          if-no-files-found: 'error'
   linux:
     name: "Linux"
     timeout-minutes: 120
-    runs-on: ubuntu-latest
+    runs-on: Ubuntu-latest
     strategy:
       matrix:
+        # Available amd64, amd64/v2 amd64/v3, arm64, riscv64, ppc64le, s390x, 386, arm/v7, arm/v6
+        # GraalVM only knows about amd64, arm64
         arch: [ amd64, arm64 ]
     outputs:
       version: ${{ inputs.version || steps.java_info.outputs.project_version }}
     steps:
-      - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+      - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
+        uses: actions/checkout@main
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
           token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
       - name: "🔍 Read Java Info"
-        id: java_info
+        id: "java_info"
         uses: YunaBraska/java-info-action@main
       - name: "🕹️ Set up QEMU"
         uses: docker/setup-qemu-action@v3
-      - name: "🐳 Set up Buildx"
+      - name: "🐳 Set up Docker"
         uses: docker/setup-buildx-action@v3
-      - name: "🏗️ Build native image"
+      - name: "🏗️ Build [${{runner.os}}/${{matrix.arch}}]"
         uses: docker/build-push-action@v6
         with:
           push: false
@@ -87,118 +96,135 @@ jobs:
           file: Dockerfile_Native
           target: export
           outputs: type=local,dest=target
-          platforms: linux/${{ matrix.arch }}
-          provenance: false
+          platforms: linux/${{matrix.arch}}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: false
         env:
           DOCKER_BUILD_CHECKS_ANNOTATIONS: false
           DOCKER_BUILD_RECORD_UPLOAD: false
           DOCKER_BUILD_SUMMARY: true
-      - name: "📝 Prepare artifact"
-        id: artifact
+      - name: "📝 Set filename ${{ github.event.repository.name }}-${{runner.os}}-${{ matrix.arch }}-${{ inputs.version || steps.java_info.outputs.project_version }}.native"
+        id: "artifact"
         run: |
-          filename=$(echo "${{ github.event.repository.name }}-${{runner.os}}-${{ matrix.arch }}-${{ inputs.version || steps.java_info.outputs.project_version }}.native" | tr '[:upper:]' '[:lower:]')
+          echo "########## LIST    ##########"
+          docker buildx ls
+          echo "########## INSPECT ##########"
+          docker buildx inspect --bootstrap | grep Platforms | while read -r line; do echo "${line#*:}"; done | tr -d '[:space:]' || true
+          echo "########## SAVE    ##########"
+          filename=$(echo "${{ github.event.repository.name }}-${{runner.os}}-${{ matrix.arch }}-${{ steps.java_info.outputs.project_version }}.native" | tr '[:upper:]' '[:lower:]')
+          echo "filename [${filename}]"
           echo "filename=${filename}" >> $GITHUB_OUTPUT
-          mv target/email-html-validator.native "${filename}"
-          chmod +x "${filename}"
-      - name: "💼 Upload native"
+          ls -lah
+          mv target/app.native ${filename}
+          chmod +x ${filename}
+          ls -lah
+      - name: "💼 Save [${{ steps.artifact.outputs.filename }}] Artifact"
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
-          if-no-files-found: error
-
+          if-no-files-found: 'error'
   macos:
-    name: "macOS"
-    timeout-minutes: 20
+    name: "MacOs"
+    timeout-minutes: 10
     runs-on: macos-latest
     steps:
-      - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+      - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
+        uses: actions/checkout@main
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
           token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
-      - name: "♻️ Cache Maven"
+      - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
         uses: actions/cache@v4
         with:
           path: |
             ~/.m2
-          key: macos-build-${{ hashFiles('**/pom.xml') }}
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}
+          restore-keys: unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}
       - name: "🔍 Read Java Info"
-        id: java_info
+        id: "java_info"
         uses: YunaBraska/java-info-action@main
-      - name: "☕ Setup GraalVM"
-        uses: actions/setup-java@v4
+      - name: "☕ Setup Java [${{ steps.java_info.outputs.java_version }}] Builder [${{ steps.java_info.outputs.builder_name }}] [${{ steps.java_info.outputs.builder_version }}]"
+        uses: actions/setup-java@main
         with:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'graalvm'
-      - name: "🏗️ Build native"
-        run: ${{ steps.java_info.outputs.cmd_build }} -Pnative -DskipTests
-      - name: "📝 Prepare artifact"
-        id: artifact
+      - name: "🏗️ Build [${{runner.os}}/${{matrix.arch}}]"
+        id: "artifact"
         run: |
           filename=$(echo "${{ github.event.repository.name }}-${{runner.os}}-${{ runner.arch }}-${{ inputs.version || steps.java_info.outputs.project_version }}.native" | tr '[:upper:]' '[:lower:]')
+          echo "filename [${filename}]"
           echo "filename=${filename}" >> $GITHUB_OUTPUT
-          mv target/email-html-validator.native "${filename}"
-          chmod +x "${filename}"
-      - name: "💼 Upload native"
+          ${{ steps.java_info.outputs.cmd_build }} -Pnative
+          ls -lah
+          mv target/${{ github.event.repository.name }}.native ${filename}
+          chmod +x ${filename}
+          ls -lah
+      - name: "💼 Save [${{ steps.artifact.outputs.filename }}] Artifact"
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
-          if-no-files-found: error
-
+          if-no-files-found: 'error'
   windows:
     name: "Windows"
-    timeout-minutes: 20
+    timeout-minutes: 10
     runs-on: windows-latest
     steps:
-      - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+      - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
+        uses: actions/checkout@main
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
           token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
-      - name: "♻️ Cache Maven"
+      - name: "♻️ Restore cache [${{runner.os}}-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
         uses: actions/cache@v4
         with:
           path: |
             ~\.m2
-          key: windows-build-${{ hashFiles('**/pom.xml') }}
+            ~\.gradle\caches
+            ~\.gradle\wrapper
+          key: ${{runner.os}}-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}
+          restore-keys: ${{runner.os}}-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}
       - name: "🔍 Read Java Info"
-        id: java_info
+        id: "java_info"
         uses: YunaBraska/java-info-action@main
-      - name: "☕ Setup GraalVM"
-        uses: actions/setup-java@v4
+      - name: "☕ Setup Java [${{ steps.java_info.outputs.java_version }}] Builder [${{ steps.java_info.outputs.builder_name }}] [${{ steps.java_info.outputs.builder_version }}]"
+        uses: actions/setup-java@main
         with:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'graalvm'
-      - name: "🏗️ Build native"
+      - name: "🏗️ Build [${{runner.os}}/${{runner.arch}}]"
         shell: cmd
         run: |
-          ${{ steps.java_info.outputs.cmd_build }} -Pnative -DskipTests
-      - name: "📝 Prepare artifact"
-        id: artifact
-        shell: bash
+          ${{ steps.java_info.outputs.cmd_build }} -Pnative
+      - name: "📝 Set filename [${{ github.event.repository.name }}-${{runner.os}}-${{ runner.arch }}-${{ inputs.version || steps.java_info.outputs.project_version }}.exe]"
+        id: "artifact"
+        shell: sh
         run: |
           filename=$(echo "${{ github.event.repository.name }}-${{runner.os}}-${{ runner.arch }}-${{ inputs.version || steps.java_info.outputs.project_version }}.exe" | tr '[:upper:]' '[:lower:]')
+          echo "filename [${filename}]"
           echo "filename=${filename}" >> $GITHUB_OUTPUT
-          mv target/email-html-validator.native.exe "${filename}"
-      - name: "💼 Upload native"
+          ls -lah
+          mv "target/${{ github.event.repository.name }}.native.exe" "${filename}"
+          ls -lah
+      - name: "💼 Save [${{ steps.artifact.outputs.filename }}] Artifact"
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
-          if-no-files-found: error
-
+          if-no-files-found: 'error'
   release:
-    name: "Publish"
+    name: "Release"
+    timeout-minutes: 5
     needs: [ jar, linux, macos, windows ]
     runs-on: ubuntu-latest
     steps:
-      - name: "💾 Download artifacts"
+      - name: "💾 Download Artifacts"
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
@@ -214,3 +240,4 @@ jobs:
           tag: ${{ needs.linux.outputs.version }}
           name: ${{ needs.linux.outputs.version }}
           artifacts: ${{ github.event.repository.name }}-*.native,${{ github.event.repository.name }}-*.exe,${{ github.event.repository.name }}-*.jar
+

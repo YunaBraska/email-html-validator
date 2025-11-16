@@ -1,0 +1,57 @@
+name: "E-Mail HTML Validator"
+description: "Plain Java CLI that validates HTML for email clients"
+author: "Yuna Morgenstern"
+inputs:
+  output_dir:
+    description: "[PATH] Persist JSON, XML, HTML, and Markdown reports into. empty for no report generation"
+    required: false
+  no_bfsg:
+    description: "Skip the BFSG compliance audit (enabled by default; uses axe-core + Playwright)"
+    required: false
+  bfsg_tags:
+    description: "Comma-separated axe-core tags for the BFSG audit (e.g., wcag2aa,best-practice)"
+    required: false
+  help:
+    description: "Show usage and exit"
+    required: false
+  github_summary:
+    description: "Append the Markdown report to the GitHub Action summary"
+    required: false
+outputs:
+  accepted:
+    description: "Weighted accepted percentage"
+  partial:
+    description: "Weighted partial percentage"
+  rejected:
+    description: "Weighted rejected percentage"
+  unknown:
+    description: "Comma-separated unknown features"
+  bfsg_status:
+    description: "BFSG status (pass/fail/error/skipped)"
+  bfsg_issues:
+    description: "Number of BFSG violations"
+  report_dir:
+    description: "Absolute directory containing exported reports"
+  report_json:
+    description: "Absolute path to report.json"
+  report_html:
+    description: "Absolute path to report.html"
+  report_md:
+    description: "Absolute path to report.md"
+  report_xml:
+    description: "Absolute path to report.xml"
+  summary_md:
+    description: "Absolute path to report.md appended to the GitHub summary"
+runs:
+  using: "docker"
+  image: "docker://ghcr.io/yunabraska/api-doc-crafter:latest"
+env:
+    EHV_OUTPUT_DIR: ${{ inputs.output_dir }}
+    EHV_NO_BFSG: ${{ inputs.no_bfsg }}
+    EHV_BFSG_TAGS: ${{ inputs.bfsg_tags }}
+    EHV_HELP: ${{ inputs.help }}
+    EHV_SUMMARY: ${{ inputs.github_summary }}
+
+branding:
+  color: "green"
+  icon: "code"

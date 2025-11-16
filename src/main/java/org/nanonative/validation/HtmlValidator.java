@@ -48,7 +48,12 @@ public class HtmlValidator {
     }
 
     public static TypeMap validate(final String html, final boolean includeBfsg) {
+        return validate(html, includeBfsg, List.of());
+    }
+
+    public static TypeMap validate(final String html, final boolean includeBfsg, final List<String> bfsgTags) {
         Objects.requireNonNull(html, "html");
+        final var normalizedTags = bfsgTags == null ? List.<String>of() : bfsgTags;
         final var partialNotes = new TypeMap();
         final var unknown = new ArrayList<String>();
         final var weightedTotals = new BigDecimal[]{zero(), zero(), zero()};
@@ -124,7 +129,7 @@ public class HtmlValidator {
         report.put(FIELD_CLIENT_COUNT, CaniEmailFeatureDatabase.clientCount());
         report.put(FIELD_OPERATING_SYSTEM_COUNT, CaniEmailFeatureDatabase.operatingSystemCount());
         if (includeBfsg) {
-            var bfsgResult = BfsgComplianceValidator.evaluate(html);
+            var bfsgResult = BfsgComplianceValidator.evaluate(html, normalizedTags);
             report.put(FIELD_BFSG_STATUS, bfsgResult.status());
             report.put(FIELD_BFSG_ISSUE_COUNT, bfsgResult.issues().size());
             report.put(FIELD_BFSG_ISSUES, bfsgResult.issues());

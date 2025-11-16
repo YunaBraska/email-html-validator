@@ -1,0 +1,307 @@
+[
+{
+  "name":"[Lcom.microsoft.playwright.impl.Channel;"
+},
+{
+  "name":"[Lcom.microsoft.playwright.impl.SerializedValue$O;"
+},
+{
+  "name":"[Lcom.microsoft.playwright.impl.SerializedValue;"
+},
+{
+  "name":"[Ljava.lang.StackTraceElement;"
+},
+{
+  "name":"[Ljava.lang.Throwable;"
+},
+{
+  "name":"com.deque.html.axecore.args.AxeRunContext",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"getExclude","parameterTypes":[] }, {"name":"getInclude","parameterTypes":[] }]
+},
+{
+  "name":"com.deque.html.axecore.args.AxeRunOptions",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"getAbsolutePaths","parameterTypes":[] }, {"name":"getFrameWaitTimeInMilliseconds","parameterTypes":[] }, {"name":"getIFrames","parameterTypes":[] }, {"name":"getRestoreScroll","parameterTypes":[] }, {"name":"getResultTypes","parameterTypes":[] }, {"name":"getRules","parameterTypes":[] }, {"name":"getRunOnly","parameterTypes":[] }]
+},
+{
+  "name":"com.deque.html.axecore.results.AxeResults",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setInapplicable","parameterTypes":["java.util.List"] }, {"name":"setIncomplete","parameterTypes":["java.util.List"] }, {"name":"setPasses","parameterTypes":["java.util.List"] }, {"name":"setTestEngine","parameterTypes":["com.deque.html.axecore.results.TestEngine"] }, {"name":"setTimestamp","parameterTypes":["java.lang.String"] }, {"name":"setUrl","parameterTypes":["java.lang.String"] }, {"name":"setViolations","parameterTypes":["java.util.List"] }]
+},
+{
+  "name":"com.deque.html.axecore.results.Check",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setData","parameterTypes":["java.lang.Object"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setImpact","parameterTypes":["java.lang.String"] }, {"name":"setMessage","parameterTypes":["java.lang.String"] }, {"name":"setRelatedNodes","parameterTypes":["java.util.List"] }]
+},
+{
+  "name":"com.deque.html.axecore.results.CheckedNode",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setAll","parameterTypes":["java.util.List"] }, {"name":"setAny","parameterTypes":["java.util.List"] }, {"name":"setFailureSummary","parameterTypes":["java.lang.String"] }, {"name":"setImpact","parameterTypes":["java.lang.String"] }, {"name":"setNone","parameterTypes":["java.util.List"] }]
+},
+{
+  "name":"com.deque.html.axecore.results.FrameContext",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"com.deque.html.axecore.results.Node",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"setHtml","parameterTypes":["java.lang.String"] }, {"name":"setTarget","parameterTypes":["java.lang.Object"] }]
+},
+{
+  "name":"com.deque.html.axecore.results.Rule",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setHelp","parameterTypes":["java.lang.String"] }, {"name":"setHelpUrl","parameterTypes":["java.lang.String"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setImpact","parameterTypes":["java.lang.String"] }, {"name":"setNodes","parameterTypes":["java.util.List"] }, {"name":"setTags","parameterTypes":["java.util.List"] }]
+},
+{
+  "name":"com.deque.html.axecore.results.TestEngine",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setName","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"com.deque.html.axecore.results.TestEnvironment",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.deque.html.axecore.results.TestRunner",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.deque.html.axecore.results.ToolOptions",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setReporter","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"com.fasterxml.jackson.databind.deser.std.StackTraceElementDeserializer$Adapter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.Browser$NewContextOptions",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.BrowserContext$CloseOptions",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.BrowserType$LaunchOptions",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.Frame$SetContentOptions",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.Page$CloseOptions",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.Page$SetContentOptions",
+  "fields":[{"name":"timeout"}, {"name":"waitUntil"}]
+},
+{
+  "name":"com.microsoft.playwright.impl.Channel",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.impl.Message",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.impl.SerializedArgument",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.impl.SerializedError",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.impl.SerializedError$Error",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.impl.SerializedValue",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.impl.SerializedValue$O",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.impl.SerializedValue$R",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.impl.driver.jar.DriverJar",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.options.Geolocation",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.options.HarContentPolicy",
+  "allDeclaredFields":true
+},
+{
+  "name":"com.microsoft.playwright.options.HarMode",
+  "allDeclaredFields":true
+},
+{
+  "name":"com.microsoft.playwright.options.HttpCredentials",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.options.ViewportSize",
+  "allDeclaredFields":true,
+  "unsafeAllocated":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.options.Proxy",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.options.RecordVideoSize",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.options.ScreenSize",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.microsoft.playwright.options.ViewportSize",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"java.io.Serializable",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.Class",
+  "methods":[{"name":"getRecordComponents","parameterTypes":[] }, {"name":"isRecord","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.Comparable",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.Double",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"java.lang.Exception",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"java.lang.Number",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.Throwable",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"java.lang.constant.Constable",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.constant.ConstantDesc",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.reflect.RecordComponent",
+  "methods":[{"name":"getName","parameterTypes":[] }, {"name":"getType","parameterTypes":[] }]
+},
+{
+  "name":"java.security.SecureRandomParameters"
+},
+{
+  "name":"java.sql.Date"
+},
+{
+  "name":"java.util.concurrent.ForkJoinTask",
+  "fields":[{"name":"aux"}, {"name":"status"}]
+},
+{
+  "name":"java.util.concurrent.atomic.AtomicReference",
+  "fields":[{"name":"value"}]
+},
+{
+  "name":"jdk.internal.jrtfs.JrtFileSystemProvider"
+},
+{
+  "name":"jdk.internal.misc.Unsafe"
+},
+{
+  "name":"sun.misc.Unsafe",
+  "fields":[{"name":"theUnsafe"}],
+  "methods":[{"name":"allocateInstance","parameterTypes":["java.lang.Class"] }]
+},
+{
+  "name":"sun.security.provider.NativePRNG",
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"] }]
+},
+{
+  "name":"sun.security.provider.SHA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+}
+]

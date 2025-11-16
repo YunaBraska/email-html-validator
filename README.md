@@ -8,7 +8,7 @@ Small CLI that inspects HTML snippets or templates and reports which e‑mail cl
 - Computes weighted support percentages and lists clients with partial or rejected coverage.
 - Writes console output plus JSON/XML/HTML/Markdown artifacts (see `--output-dir`).
 - GraalVM native builds for Linux/Windows/macOS, backed by Docker multi‑arch images and release workflows.
-- Optional BFSG compliance audit (basic accessibility heuristics) via `--bfsg`.
+- Optional BFSG compliance audit (basic accessibility heuristics) via `--bfsg`, with selectable axe-core tag sets.
 
 ## Quickstart
 
@@ -28,16 +28,50 @@ Reports land in the directory you point to (one per format). Console output also
 email-html-validator [OPTIONS] <HTML|FILE|URL|-> 
 ```
 
-| Option | Description |
-| --- | --- |
-| `--output-dir <dir>` | Persist JSON, XML, HTML, and Markdown reports into `<dir>` |
-| `--no-bfsg` | Skip the BFSG compliance audit (enabled by default; uses axe-core + Playwright) |
-| `--help` | Show usage and exit |
+| Option                  | Description                                                                              |
+|-------------------------|------------------------------------------------------------------------------------------|
+| `--output-dir <dir>`    | Persist JSON, XML, HTML, and Markdown reports; defaults to `./reports`                  |
+| `--no-bfsg`             | Skip the BFSG compliance audit (enabled by default; uses axe-core + Playwright)          |
+| `--bfsg-tags <tag,...>` | Restrict the BFSG audit to comma-separated axe-core tags (e.g., `wcag2aa,best-practice`) |
+| `--help`                | Show usage and exit                                                                      |
+| `--github-summary`      | Append the generated Markdown report to `GITHUB_STEP_SUMMARY` (GitHub Actions)          |
 
 - Provide inline HTML (`"<table>...</table>"`), a local file path, or an `http(s)` URL as the positional argument.
 - Use `-` to read from stdin (e.g., `cat mail.html \| email-html-validator - --output-dir reports`). Passing no source prints an error instead of blocking.
 - Exit codes: `0` success, `1` input/usage error, `2` runtime failure (network, validator bug, etc.).
 
+### Environment Overrides
+
+Every CLI flag can be mirrored through environment variables with the short `EHV_` prefix. These are handy for GitHub Actions and Docker wrappers:
+
+| Variable         | Effect                                                   |
+|------------------|----------------------------------------------------------|
+| `EHV_HELP`       | When truthy (`true`, `1`, `yes`), prints usage and exits |
+| `EHV_OUTPUT_DIR` | Sets the report directory (defaults to `./reports`)      |
+| `EHV_NO_BFSG`    | Truthy values disable the BFSG audit (`--no-bfsg`)       |
+| `EHV_BFSG_TAGS`  | Comma-separated axe-core tags (same as `--bfsg-tags`)    |
+| `EHV_SUMMARY`    | Truthy values enable `--github-summary` behavior         |
+
+*Bonus:* set `EHV_BFSG_TAGS=unicorn` to get a whimsical console shout-out. Append `rick=1` to any CLI invocation if you want the dataset reference to lead somewhere… unexpected.
+
+### GitHub Outputs
+
+When `GITHUB_OUTPUT` is set (as in GitHub Actions), the CLI appends reusable statistics:
+
+| Output        | Description                                           |
+|---------------|-------------------------------------------------------|
+| `accepted`    | Weighted accepted percentage (string, two decimals)   |
+| `partial`     | Weighted partial percentage                           |
+| `rejected`    | Weighted rejected percentage                          |
+| `unknown`     | Comma-separated unknown feature identifiers           |
+| `bfsg_status` | BFSG status (`pass`, `fail`, `error`, or `skipped`)   |
+| `bfsg_issues` | Number of BFSG violations in the last run             |
+| `report_dir`  | Absolute path to the directory containing all reports |
+| `report_json` | Absolute path to `report.json`                        |
+| `report_html` | Absolute path to `report.html`                        |
+| `report_md`   | Absolute path to `report.md`                          |
+| `report_xml`  | Absolute path to `report.xml`                         |
+| `summary_md`  | Markdown content written to `GITHUB_STEP_SUMMARY`     |
 ## Native Builds
 
 - **Local GraalVM:** install GraalVM 21 with `native-image` and run `mvn -q -DskipTests -Pnative package`. The native binary appears as `target/email-html-validator.native` (or `.exe` on Windows). Native executables don’t embed Chromium, so pass `--no-bfsg` if you want to avoid the inevitable “BFSG compliance: error (Failed to create driver)” message.
@@ -47,7 +81,7 @@ email-html-validator [OPTIONS] <HTML|FILE|URL|->
 ## BFSG Compliance (axe-core)
 
 - Uses `com.deque.html.axe-core:playwright` plus `com.microsoft.playwright` to launch headless Chromium, inject `axe.min.js`, and report violations inline. The first run downloads the Playwright browsers (~120 MB) into `~/.cache/ms-playwright/` (respect `PLAYWRIGHT_BROWSERS_PATH` if you want a custom cache location).
-- The CLI currently runs axe-core with its default settings. The underlying `AxeBuilder` exposes further knobs—`withTags(...)`, `withRules(...)`, `disableRules(...)`, `include(...)`, `exclude(...)`, `withOptions(AxeRunOptions)`—should you decide to surface more CLI flags later.
+- By default, the CLI runs the entire axe-core rule catalog. Pass `--bfsg-tags` with comma-separated identifiers (e.g., `wcag2a,wcag2aa,best-practice`) to limit the audit to specific tags. Pair it with `--no-bfsg` when the Playwright runtime is unavailable (for example, in restricted native builds).
 
 ## Continuous Delivery
 
@@ -68,6 +102,9 @@ cat snippet.html | java -jar target/email-html-validator-*.jar - --output-dir re
 
 # Run BFSG audit
 java -jar target/email-html-validator.jar --bfsg "<html><body><img src='hero.png'></body></html>"
+
+# Run BFSG audit against specific axe-core tags
+java -jar target/email-html-validator.jar --bfsg-tags wcag2a,wcag2aa "<html><body><img src='hero.png'></body></html>"
 ```
 
 The CLI exits with `1` for option/source errors and `2` for runtime failures, which the tests and workflows assert to keep the UX predictable.

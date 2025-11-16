@@ -33,18 +33,16 @@ public class ReportExporter {
 
     public static void printConsole(final TypeMap report, final PrintStream out) {
         var total = report.asLongOpt(HtmlValidator.FIELD_TOTAL).orElse(0L);
+        var featureCount = report.asLongOpt(HtmlValidator.FIELD_FEATURE_COUNT).orElse(0L);
+        var clientCount = report.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT).orElse(0L);
+        var osCount = report.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT).orElse(0L);
+        var reference = report.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL).orElse("https://www.caniemail.com");
         out.printf(Locale.ROOT, "Features evaluated: %d%n", total);
 
         for (var level : LEVELS) {
             var percentage = report.asBigDecimalOpt(level).orElse(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
             out.printf(Locale.ROOT, "  - %s: %s%%%n", level, percentage.toPlainString());
         }
-
-        out.printf(Locale.ROOT, "Dataset: %d features, %d clients, %d operating systems%n",
-                report.asLongOpt(HtmlValidator.FIELD_FEATURE_COUNT).orElse(0L),
-                report.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT).orElse(0L),
-                report.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT).orElse(0L));
-        out.println("Reference: " + report.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL).orElse("https://www.caniemail.com"));
 
         var notes = report.asMap(HtmlValidator.FIELD_PARTIAL_NOTES);
         out.println("Findings:");
@@ -89,6 +87,8 @@ public class ReportExporter {
                 issues.forEach(issue -> out.println("  - " + issue));
             }
         });
+        out.printf(Locale.ROOT, "Dataset: %d features, %d clients, %d operating systems%n", featureCount, clientCount, osCount);
+        out.println("Reference: " + reference);
     }
 
     public void export(final TypeMap report) {
@@ -182,14 +182,6 @@ public class ReportExporter {
         }
         builder.append("</ul></section>").append(NL);
 
-        builder.append("<section class=\"card\"><h2>Dataset</h2>")
-                .append("<p>Total features known: ").append(featureCount).append("</p>")
-                .append("<p>Total clients known: ").append(clientCount).append("</p>")
-                .append("<p>Total operating systems: ").append(osCount).append("</p>")
-                .append("<p>Reference: <a href=\"").append(reference).append("\" target=\"_blank\" rel=\"noopener noreferrer\">")
-                .append(reference).append("</a></p></section>")
-                .append(NL);
-
         builder.append("<section class=\"card\"><h2>Partial notes</h2>").append(NL);
         if (partialNotes.isEmpty()) {
             builder.append("<p>(none)</p>").append(NL);
@@ -256,6 +248,14 @@ public class ReportExporter {
             builder.append("</section>").append(NL);
         });
 
+        builder.append("<section class=\"card\"><h2>Dataset</h2>")
+                .append("<p>Total features known: ").append(featureCount).append("</p>")
+                .append("<p>Total clients known: ").append(clientCount).append("</p>")
+                .append("<p>Total operating systems: ").append(osCount).append("</p>")
+                .append("<p>Reference: <a href=\"").append(reference).append("\" target=\"_blank\" rel=\"noopener noreferrer\">")
+                .append(reference).append("</a></p></section>")
+                .append(NL);
+
         builder.append("</div>").append(NL)
                 .append("</body>").append(NL)
                 .append("</html>").append(NL);
@@ -285,12 +285,6 @@ public class ReportExporter {
                     .append(NL);
         }
         builder.append(NL);
-
-        builder.append("## Dataset").append(NL);
-        builder.append("- Features known: ").append(report.asLongOpt(HtmlValidator.FIELD_FEATURE_COUNT).orElse(0L)).append(NL);
-        builder.append("- Clients known: ").append(report.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT).orElse(0L)).append(NL);
-        builder.append("- Operating systems: ").append(report.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT).orElse(0L)).append(NL);
-        builder.append("- Reference: ").append(report.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL).orElse("https://www.caniemail.com")).append(NL).append(NL);
 
         builder.append("## Partial notes").append(NL);
         if (partialNotes.isEmpty()) {
@@ -341,6 +335,11 @@ public class ReportExporter {
                 bfsgIssues.forEach(issue -> builder.append("- ").append(issue).append(NL));
             }
         });
+        builder.append(NL).append("## Dataset").append(NL);
+        builder.append("- Features known: ").append(report.asLongOpt(HtmlValidator.FIELD_FEATURE_COUNT).orElse(0L)).append(NL);
+        builder.append("- Clients known: ").append(report.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT).orElse(0L)).append(NL);
+        builder.append("- Operating systems: ").append(report.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT).orElse(0L)).append(NL);
+        builder.append("- Reference: ").append(report.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL).orElse("https://www.caniemail.com")).append(NL);
         return builder.toString();
     }
 

@@ -1,42 +1,51 @@
-name: "Test Email HTML Validator"
+name: "Test Service"
 
 on:
   push:
     branches:
       - main
-  pull_request:
   workflow_dispatch:
 
 jobs:
-  tests:
+  test-service:
     runs-on: ubuntu-latest
+
     steps:
       - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
-
-      - name: "♻️ Cache Maven"
+        uses: actions/checkout@v3
+      - name: "Run Service"
+        uses: YunaBraska/email-html-validator@main
+      - name: "Validate Output"
+        run: |
+          echo "pwd [$(pwd)]"
+          ls -lah
+          ls -lah swagger_output
+          ls -lah swagger_output/index.html
+      - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
         uses: actions/cache@v4
         with:
           path: |
-            ~/.m2/repository
-          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
-          restore-keys: maven-${{ runner.os }}-
-
-      - name: "☕ Setup Java"
-        uses: actions/setup-java@v4
+            ~/.m2
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}
+          restore-keys: unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}
+      - name: "🔍 Read Java Info"
+        id: "java_info"
+        uses: YunaBraska/java-info-action@main
+      - name: "☕ Setup Java [${{ steps.java_info.outputs.java_version }}] Builder [${{ steps.java_info.outputs.builder_name }}] [${{ steps.java_info.outputs.builder_version }}]"
+        uses: actions/setup-java@main
         with:
-          java-version: '21'
+          java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'temurin'
-
-      - name: "🧪 Unit & component tests"
-        run: mvn -B -q test
-
-      - name: "🏗️ Package CLI"
-        run: mvn -B -q -DskipTests package
-
-      - name: "🧾 Smoke test CLI"
-        run: |
-          JAR=$(ls target/email-html-validator-*.jar | head -n 1)
-          mkdir -p cli-report
-          java -jar "${JAR}" --output-dir cli-report "<html><body><table style='color:#fff'></table></body></html>"
-          ls -lah cli-report
+      - name: "🧪 Build & Test"
+        run: ${{ steps.java_info.outputs.cmd_test_build }}
+        env:
+          GITHUB_USER: 'GithubBot'
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: "🗒️ Maven License Info"
+        id: "license_info"
+        uses: YunaBraska/maven-license-info-action@main
+        with:
+          exclude-scopes: 'test,provided,system'
+          output-dir: 'docs/licenses'
