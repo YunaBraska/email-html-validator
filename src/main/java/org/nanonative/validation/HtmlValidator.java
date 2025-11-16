@@ -26,6 +26,9 @@ public class HtmlValidator {
     public static final String FIELD_CLIENT_COUNT = "clientCount";
     public static final String FIELD_OPERATING_SYSTEM_COUNT = "operatingSystemCount";
     public static final String FIELD_REFERENCE_URL = "caniemailUrl";
+    public static final String FIELD_BFSG_STATUS = "bfsgStatus";
+    public static final String FIELD_BFSG_ISSUES = "bfsgIssues";
+    public static final String FIELD_BFSG_ISSUE_COUNT = "bfsgIssueCount";
     public static final String LEVEL_ACCEPTED = "accepted";
     public static final String LEVEL_PARTIAL = "partial";
     public static final String LEVEL_REJECTED = "rejected";
@@ -41,6 +44,10 @@ public class HtmlValidator {
     }
 
     public static TypeMap validate(final String html) {
+        return validate(html, false);
+    }
+
+    public static TypeMap validate(final String html, final boolean includeBfsg) {
         Objects.requireNonNull(html, "html");
         final var partialNotes = new TypeMap();
         final var unknown = new ArrayList<String>();
@@ -116,6 +123,12 @@ public class HtmlValidator {
         report.put(FIELD_FEATURE_COUNT, CaniEmailFeatureDatabase.featureCount());
         report.put(FIELD_CLIENT_COUNT, CaniEmailFeatureDatabase.clientCount());
         report.put(FIELD_OPERATING_SYSTEM_COUNT, CaniEmailFeatureDatabase.operatingSystemCount());
+        if (includeBfsg) {
+            var bfsgResult = BfsgComplianceValidator.evaluate(html);
+            report.put(FIELD_BFSG_STATUS, bfsgResult.status());
+            report.put(FIELD_BFSG_ISSUE_COUNT, bfsgResult.issues().size());
+            report.put(FIELD_BFSG_ISSUES, bfsgResult.issues());
+        }
         return report;
     }
 

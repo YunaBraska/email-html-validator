@@ -220,6 +220,31 @@ class EmailHtmlValidatorCliBlackBoxTest {
             .contains("tag:head", "tag:meta", "attribute:name", "attribute:content");
     }
 
+    @Test
+    void shouldReportBfsgComplianceWhenRequested(final TestInfo info) {
+        var dir = reportDir(info);
+        var html = "<html><body><img src='hero.png'><a href=''>empty</a><a href='http://example.com'></a></body></html>";
+        var output = runCli(dir, "--bfsg", html);
+        assertThat(output).contains("BFSG compliance: fail");
+        var report = readJson(dir.resolve("report.json"));
+        assertThat(report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS)).contains("fail");
+        var issueCount = report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).orElse(0L);
+        assertThat(issueCount).isGreaterThan(0L);
+        var issues = report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES);
+        assertThat(issues).isNotEmpty();
+        assertThat(issues.stream().anyMatch(issue -> issue.contains("img"))).isTrue();
+        assertThat(issues.stream().anyMatch(issue -> issue.contains("link"))).isTrue();
+    }
+
+    @Test
+    void shouldSkipBfsgWhenDisabled(final TestInfo info) {
+        var dir = reportDir(info);
+        var output = runCli(dir, "--no-bfsg", "<html><body><p>skip</p></body></html>");
+        assertThat(output).doesNotContain("BFSG compliance:");
+        var report = readJson(dir.resolve("report.json"));
+        assertThat(report.containsKey(HtmlValidator.FIELD_BFSG_STATUS)).isFalse();
+    }
+
     private void respond(final com.sun.net.httpserver.HttpExchange exchange, final String body) throws IOException {
         var bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(200, bytes.length);
@@ -317,6 +342,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
         assertThat(output).contains("  - accepted: " + accepted + "%");
         assertThat(output).contains("  - partial: " + partial + "%");
         assertThat(output).contains("  - rejected: " + rejected + "%");
+        assertThat(output).contains("BFSG compliance:");
         var datasetSummary = String.format(
             Locale.ROOT,
             "Dataset: %d features, %d clients, %d operating systems",

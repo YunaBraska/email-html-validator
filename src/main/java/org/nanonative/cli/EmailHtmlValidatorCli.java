@@ -12,6 +12,7 @@ public class EmailHtmlValidatorCli {
     private static final String OPTION_HELP = "help";
     private static final String OPTION_SOURCE = "source";
     private static final String OPTION_OUTPUT = "outputDir";
+    private static final String OPTION_BFSG = "bfsg";
 
     private EmailHtmlValidatorCli() {
     }
@@ -36,7 +37,8 @@ public class EmailHtmlValidatorCli {
             var source = options.asStringOpt(OPTION_SOURCE)
                 .orElseThrow(() -> new IllegalArgumentException("Missing HTML source. Provide inline HTML, '-', file path, or URL."));
             var html = HtmlSourceLoader.load(source);
-            TypeMap report = HtmlValidator.validate(html);
+            boolean runBfsg = options.asBooleanOpt(OPTION_BFSG).orElse(false);
+            TypeMap report = HtmlValidator.validate(html, runBfsg);
             ReportExporter.printConsole(report, out);
 
             options.asStringOpt(OPTION_OUTPUT)
@@ -56,6 +58,7 @@ public class EmailHtmlValidatorCli {
     static TypeMap parseOptions(final String[] args) {
         var options = new TypeMap();
         options.put(OPTION_HELP, false);
+        options.put(OPTION_BFSG, true);
         var builder = new StringBuilder();
         if (args != null) {
             for (int index = 0; index < args.length; index++) {
@@ -76,6 +79,14 @@ public class EmailHtmlValidatorCli {
                         throw new IllegalArgumentException("Output directory cannot be blank");
                     }
                     options.put(OPTION_OUTPUT, dir);
+                    continue;
+                }
+                if ("--bfsg".equals(arg) || "--check-bfsg".equals(arg)) {
+                    options.put(OPTION_BFSG, true);
+                    continue;
+                }
+                if ("--no-bfsg".equals(arg) || "--skip-bfsg".equals(arg)) {
+                    options.put(OPTION_BFSG, false);
                     continue;
                 }
                 if (!builder.isEmpty()) {
@@ -99,6 +110,7 @@ public class EmailHtmlValidatorCli {
         out.println("Options:");
         out.println("  --help              Show this help message");
         out.println("  --output-dir <dir>  Persist JSON/XML/HTML/Markdown artifacts");
+        out.println("  --no-bfsg           Skip BFSG compliance checks (enabled by default)");
         out.println();
         out.println("Provide exactly one HTML source: inline HTML, a file path, an HTTP(S) URL, or pipe through stdin.");
     }

@@ -81,6 +81,14 @@ public class ReportExporter {
             out.println("Rejected clients:");
             rejectedClients.forEach(client -> out.println("  * " + client));
         }
+        report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS).ifPresent(status -> {
+            long issueCount = report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).orElse(0L);
+            out.printf(Locale.ROOT, "BFSG compliance: %s (%d issues)%n", status, issueCount);
+            var issues = report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES);
+            if (!issues.isEmpty()) {
+                issues.forEach(issue -> out.println("  - " + issue));
+            }
+        });
     }
 
     public void export(final TypeMap report) {
@@ -129,6 +137,9 @@ public class ReportExporter {
         var unknown = report.asList(String.class, HtmlValidator.FIELD_UNKNOWN);
         var partialClients = report.asList(String.class, HtmlValidator.FIELD_PARTIAL_CLIENTS);
         var rejectedClients = report.asList(String.class, HtmlValidator.FIELD_REJECTED_CLIENTS);
+        var bfsgStatus = report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS);
+        var bfsgIssues = report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES);
+        var bfsgIssueCount = report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).orElse(0L);
         var featureCount = report.asLongOpt(HtmlValidator.FIELD_FEATURE_COUNT).orElse(0L);
         var clientCount = report.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT).orElse(0L);
         var osCount = report.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT).orElse(0L);
@@ -225,12 +236,27 @@ public class ReportExporter {
         if (rejectedClients.isEmpty()) {
             builder.append("<p>(none)</p>").append(NL);
         } else {
-            builder.append("<div>").append(NL);
-            rejectedClients.forEach(client -> builder.append("<span class=\"chip\">").append(escapeHtml(client)).append("</span>").append(NL));
-            builder.append("</div>").append(NL);
+                builder.append("<div>").append(NL);
+                rejectedClients.forEach(client -> builder.append("<span class=\"chip\">").append(escapeHtml(client)).append("</span>").append(NL));
+                builder.append("</div>").append(NL);
         }
-        builder.append("</section>").append(NL)
-                .append("</div>").append(NL)
+        builder.append("</section>").append(NL);
+
+        bfsgStatus.ifPresent(status -> {
+            builder.append("<section class=\"card\"><h2>BFSG compliance</h2>").append(NL);
+            builder.append("<p>Status: ").append(escapeHtml(status)).append("</p>").append(NL);
+            builder.append("<p>Issues: ").append(String.valueOf(bfsgIssueCount)).append("</p>").append(NL);
+            if (bfsgIssues.isEmpty()) {
+                builder.append("<p>(none)</p>").append(NL);
+            } else {
+                builder.append("<ul class=\"notes-list\">").append(NL);
+                bfsgIssues.forEach(issue -> builder.append("<li>").append(escapeHtml(issue)).append("</li>").append(NL));
+                builder.append("</ul>").append(NL);
+            }
+            builder.append("</section>").append(NL);
+        });
+
+        builder.append("</div>").append(NL)
                 .append("</body>").append(NL)
                 .append("</html>").append(NL);
         return builder.toString();
@@ -241,6 +267,9 @@ public class ReportExporter {
         var unknown = report.asList(String.class, HtmlValidator.FIELD_UNKNOWN);
         var partialClients = report.asList(String.class, HtmlValidator.FIELD_PARTIAL_CLIENTS);
         var rejectedClients = report.asList(String.class, HtmlValidator.FIELD_REJECTED_CLIENTS);
+        var bfsgStatus = report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS);
+        var bfsgIssues = report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES);
+        var bfsgIssueCount = report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).orElse(0L);
         var builder = new StringBuilder();
         builder.append("# Email HTML Validator Report").append(NL).append(NL);
         builder.append("- Features evaluated: ").append(report.asLongOpt(HtmlValidator.FIELD_TOTAL).orElse(0L)).append(NL).append(NL);
@@ -302,6 +331,16 @@ public class ReportExporter {
         } else {
             rejectedClients.forEach(client -> builder.append("- ").append(client).append(NL));
         }
+        bfsgStatus.ifPresent(status -> {
+            builder.append("\n## BFSG compliance\n");
+            builder.append("- Status: ").append(status).append(NL);
+            builder.append("- Issues: ").append(bfsgIssueCount).append(NL);
+            if (bfsgIssues.isEmpty()) {
+                builder.append("- (none)").append(NL);
+            } else {
+                bfsgIssues.forEach(issue -> builder.append("- ").append(issue).append(NL));
+            }
+        });
         return builder.toString();
     }
 

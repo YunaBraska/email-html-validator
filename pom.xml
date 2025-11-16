@@ -43,6 +43,8 @@
         <!-- Runtime deps -->
         <jsoup.version>1.17.2</jsoup.version>
         <typemap.version>2025.09.2660710</typemap.version>
+        <axe-core.version>4.11.0</axe-core.version>
+        <playwright.version>1.44.0</playwright.version>
 
         <!-- Test deps -->
         <junit.version>6.0.0</junit.version>
@@ -66,6 +68,16 @@
             <groupId>berlin.yuna</groupId>
             <artifactId>type-map</artifactId>
             <version>${typemap.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.deque.html.axe-core</groupId>
+            <artifactId>playwright</artifactId>
+            <version>${axe-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>${playwright.version}</version>
         </dependency>
 
         <!-- Test -->
