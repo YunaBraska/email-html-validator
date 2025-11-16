@@ -1,9 +1,9 @@
 package org.nanonative.validation;
 
+import com.deque.html.axecore.playwright.AxeBuilder;
 import com.deque.html.axecore.results.AxeResults;
 import com.deque.html.axecore.results.CheckedNode;
 import com.deque.html.axecore.results.Rule;
-import com.deque.html.axecore.playwright.AxeBuilder;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
@@ -29,17 +29,18 @@ class BfsgComplianceValidator {
         try (Playwright playwright = Playwright.create();
              Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
              BrowserContext context = browser.newContext()) {
-            Page page = context.newPage();
-            page.setContent(html, new Page.SetContentOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
-            AxeResults results = new AxeBuilder(page).analyze();
-            if (results == null) {
-                return new BfsgResult("error", List.of("axe-core returned no result"));
+            try (Page page = context.newPage()) {
+                page.setContent(html, new Page.SetContentOptions().setWaitUntil(WaitUntilState.NETWORKIDLE));
+                AxeResults results = new AxeBuilder(page).analyze();
+                if (results == null) {
+                    return new BfsgResult("error", List.of("axe-core returned no result"));
+                }
+                var violations = Optional.ofNullable(results.getViolations()).orElse(List.of());
+                var issues = violations.stream()
+                        .map(BfsgComplianceValidator::formatViolation)
+                        .toList();
+                return new BfsgResult(issues.isEmpty() ? "pass" : "fail", issues);
             }
-            var violations = Optional.ofNullable(results.getViolations()).orElse(List.of());
-            var issues = violations.stream()
-                .map(BfsgComplianceValidator::formatViolation)
-                .toList();
-            return new BfsgResult(issues.isEmpty() ? "pass" : "fail", issues);
         } catch (Exception exception) {
             return new BfsgResult("error", List.of("axe-core failure: " + exception.getMessage()));
         }
@@ -50,11 +51,11 @@ class BfsgComplianceValidator {
         var ruleId = Optional.ofNullable(rule.getId()).filter(s -> !s.isBlank()).orElse("rule");
         builder.append(ruleId);
         Optional.ofNullable(rule.getImpact())
-            .filter(impact -> !impact.isBlank())
-            .ifPresent(impact -> builder.append(" [").append(impact).append(']'));
+                .filter(impact -> !impact.isBlank())
+                .ifPresent(impact -> builder.append(" [").append(impact).append(']'));
         var summary = Optional.ofNullable(rule.getHelp())
-            .filter(s -> !s.isBlank())
-            .orElseGet(() -> Optional.ofNullable(rule.getDescription()).orElse("Accessibility violation"));
+                .filter(s -> !s.isBlank())
+                .orElseGet(() -> Optional.ofNullable(rule.getDescription()).orElse("Accessibility violation"));
         builder.append(": ").append(summary);
         var nodes = safeNodes(rule.getNodes());
         if (!nodes.isEmpty()) {
@@ -86,9 +87,9 @@ class BfsgComplianceValidator {
         }
         if (target instanceof List<?> list) {
             return list.stream()
-                .filter(Objects::nonNull)
-                .map(String::valueOf)
-                .collect(Collectors.joining(" "));
+                    .filter(Objects::nonNull)
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(" "));
         }
         return String.valueOf(target);
     }
