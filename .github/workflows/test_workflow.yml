@@ -1,0 +1,42 @@
+name: "Test Email HTML Validator"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "🧑‍💻 Checkout"
+        uses: actions/checkout@v4
+
+      - name: "♻️ Cache Maven"
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-${{ runner.os }}-
+
+      - name: "☕ Setup Java"
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: "🧪 Unit & component tests"
+        run: mvn -B -q test
+
+      - name: "🏗️ Package CLI"
+        run: mvn -B -q -DskipTests package
+
+      - name: "🧾 Smoke test CLI"
+        run: |
+          JAR=$(ls target/email-html-validator-*.jar | head -n 1)
+          mkdir -p cli-report
+          java -jar "${JAR}" --output-dir cli-report "<html><body><table style='color:#fff'></table></body></html>"
+          ls -lah cli-report
