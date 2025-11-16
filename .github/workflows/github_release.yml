@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
@@ -35,7 +35,7 @@ jobs:
         id: java_info
         uses: YunaBraska/java-info-action@main
       - name: "☕ Setup Java"
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'temurin'
@@ -50,7 +50,7 @@ jobs:
           mv "${build}" "${filename}"
           chmod +x "${filename}"
       - name: "💼 Upload jar"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
@@ -67,7 +67,7 @@ jobs:
       version: ${{ inputs.version || steps.java_info.outputs.project_version }}
     steps:
       - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
@@ -103,7 +103,7 @@ jobs:
           mv target/email-html-validator.native "${filename}"
           chmod +x "${filename}"
       - name: "💼 Upload native"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
@@ -115,7 +115,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
@@ -130,7 +130,7 @@ jobs:
         id: java_info
         uses: YunaBraska/java-info-action@main
       - name: "☕ Setup GraalVM"
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'graalvm'
@@ -144,7 +144,7 @@ jobs:
           mv target/email-html-validator.native "${filename}"
           chmod +x "${filename}"
       - name: "💼 Upload native"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
@@ -156,7 +156,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
@@ -171,7 +171,7 @@ jobs:
         id: java_info
         uses: YunaBraska/java-info-action@main
       - name: "☕ Setup GraalVM"
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'graalvm'
@@ -187,7 +187,7 @@ jobs:
           echo "filename=${filename}" >> $GITHUB_OUTPUT
           mv target/email-html-validator.native.exe "${filename}"
       - name: "💼 Upload native"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
@@ -199,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "💾 Download artifacts"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           merge-multiple: true
           pattern: ${{ github.event.repository.name }}-*.{native,exe,jar}

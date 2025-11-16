@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "🧑‍💻 Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: "♻️ Cache Maven"
         uses: actions/cache@v4
@@ -23,7 +23,7 @@ jobs:
           restore-keys: maven-${{ runner.os }}-
 
       - name: "☕ Setup Java"
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
