@@ -1,6 +1,6 @@
 
 Lists of 17 third-party dependencies.
-     (The Apache License, Version 2.0) type-map (berlin.yuna:type-map:2025.09.2660710 - https://github.com/YunaBraska/type-map)
+     (The Apache License, Version 2.0) type-map (berlin.yuna:type-map:2025.11.3050708 - https://github.com/YunaBraska/type-map)
      (Mozilla Public License, Version 2.0) Axe-core maven utilities (com.deque.html.axe-core:dequeutilites:4.11.0 - https://github.com/dequelabs/axe-core-maven-html)
      (Mozilla Public License, Version 2.0) Axe-core Playwright Java (com.deque.html.axe-core:playwright:4.11.0 - https://github.com/dequelabs/axe-core-maven-html)
      (The Apache Software License, Version 2.0) Jackson-annotations (com.fasterxml.jackson.core:jackson-annotations:2.20 - https://github.com/FasterXML/jackson)
@@ -15,5 +15,5 @@ Lists of 17 third-party dependencies.
      (Apache-2.0) Apache Commons IO (commons-io:commons-io:2.20.0 - https://commons.apache.org/proper/commons-io/)
      (Apache-2.0) Apache Commons Compress (org.apache.commons:commons-compress:1.28.0 - https://commons.apache.org/proper/commons-compress/)
      (Apache-2.0) Apache Commons Lang (org.apache.commons:commons-lang3:3.18.0 - https://commons.apache.org/proper/commons-lang/)
-     (The MIT License) jsoup Java HTML Parser (org.jsoup:jsoup:1.17.2 - https://jsoup.org/)
+     (The MIT License) jsoup Java HTML Parser (org.jsoup:jsoup:1.21.2 - https://jsoup.org/)
      (The Apache License, Version 2.0) org.opentest4j:opentest4j (org.opentest4j:opentest4j:1.3.0 - https://github.com/ota4j-team/opentest4j)

@@ -1,9 +1,9 @@
 [
     {
-        "line": "berlin.yuna:typemap:2025.09.2660710",
+        "line": "berlin.yuna:typemap:2025.11.3050708",
         "group": "berlin.yuna",
         "artifact": "typemap",
-        "version": "2025.09.2660710",
+        "version": "2025.11.3050708",
         "scope": "compile",
         "url": "https://github.com/YunaBraska/typemap",
         "licenses": [
@@ -240,10 +240,10 @@
         ]
     },
     {
-        "line": "org.jsoup:jsoup:1.17.2",
+        "line": "org.jsoup:jsoup:1.21.2",
         "group": "org.jsoup",
         "artifact": "jsoup",
-        "version": "1.17.2",
+        "version": "1.21.2",
         "scope": "compile",
         "url": "https://jsoup.org/",
         "licenses": [
