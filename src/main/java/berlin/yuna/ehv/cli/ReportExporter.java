@@ -1,4 +1,4 @@
-package org.nanonative.cli;
+package berlin.yuna.ehv.cli;
 
 import berlin.yuna.typemap.model.TypeMap;
 
@@ -15,24 +15,29 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static org.nanonative.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
-import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_ISSUES;
-import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_ISSUE_COUNT;
-import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_STATUS;
-import static org.nanonative.validation.HtmlValidator.FIELD_CLIENT_COUNT;
-import static org.nanonative.validation.HtmlValidator.FIELD_FEATURE_COUNT;
-import static org.nanonative.validation.HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT;
-import static org.nanonative.validation.HtmlValidator.FIELD_PARTIAL_CLIENTS;
-import static org.nanonative.validation.HtmlValidator.FIELD_PARTIAL_NOTES;
-import static org.nanonative.validation.HtmlValidator.FIELD_REFERENCE_URL;
-import static org.nanonative.validation.HtmlValidator.FIELD_REJECTED_CLIENTS;
-import static org.nanonative.validation.HtmlValidator.FIELD_TOTAL;
-import static org.nanonative.validation.HtmlValidator.FIELD_UNKNOWN;
-import static org.nanonative.validation.HtmlValidator.LEVEL_ACCEPTED;
-import static org.nanonative.validation.HtmlValidator.LEVEL_PARTIAL;
-import static org.nanonative.validation.HtmlValidator.LEVEL_REJECTED;
-import static org.nanonative.validation.HtmlValidator.WWW_CANIEMAIL_COM;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_BFSG_ISSUES;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_BFSG_ISSUE_COUNT;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_BFSG_STATUS;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_CLIENT_COUNT;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_FEATURE_COUNT;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_PARTIAL_CLIENTS;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_PARTIAL_NOTES;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_REFERENCE_URL;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_REJECTED_CLIENTS;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_TOTAL;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_UNKNOWN;
+import static berlin.yuna.ehv.validation.HtmlValidator.LEVEL_ACCEPTED;
+import static berlin.yuna.ehv.validation.HtmlValidator.LEVEL_PARTIAL;
+import static berlin.yuna.ehv.validation.HtmlValidator.LEVEL_REJECTED;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_IGNORED_FEATURES;
+import static berlin.yuna.ehv.validation.HtmlValidator.WWW_CANIEMAIL_COM;
 
+/**
+ * Handles all human-friendly output: console summaries, Markdown, HTML,
+ * XML, the works. Basically a talkative companion cube.
+ */
 public class ReportExporter {
 
     private static final List<String> LEVELS = List.of(
@@ -44,10 +49,16 @@ public class ReportExporter {
 
     private final Path directory;
 
+    /**
+     * Creates a new exporter that writes files into the given directory.
+     */
     public ReportExporter(final Path directory) {
         this.directory = directory;
     }
 
+    /**
+     * Streams the report to stdout in a chatty, readable format.
+     */
     public static void printConsole(final TypeMap report, final PrintStream out) {
         var total = report.asLongOpt(FIELD_TOTAL).orElse(0L);
         var featureCount = report.asLongOpt(FIELD_FEATURE_COUNT).orElse(0L);
@@ -86,6 +97,12 @@ public class ReportExporter {
             unknown.forEach(feature -> out.println("  * " + feature));
         }
 
+        var ignoredFeatures = report.asList(String.class, FIELD_IGNORED_FEATURES);
+        if (!ignoredFeatures.isEmpty()) {
+            out.println("Ignored features:");
+            ignoredFeatures.forEach(feature -> out.println("  * " + feature));
+        }
+
         var partialClients = report.asList(String.class, FIELD_PARTIAL_CLIENTS);
         if (!partialClients.isEmpty()) {
             out.println("Partial clients:");
@@ -109,6 +126,9 @@ public class ReportExporter {
         out.println("Reference: " + reference);
     }
 
+    /**
+     * Writes JSON/XML/HTML/Markdown variants of the report to disk.
+     */
     public void export(final TypeMap report) {
         try {
             Files.createDirectories(directory);
@@ -121,18 +141,27 @@ public class ReportExporter {
         }
     }
 
-    private void write(final String fileName, final String content) throws IOException {
+    /**
+     * Writes a UTF-8 encoded artifact. Override if you fancy object storage.
+     */
+    protected void write(final String fileName, final String content) throws IOException {
         Files.writeString(directory.resolve(fileName), content, StandardCharsets.UTF_8);
     }
 
-    private String toXml(final TypeMap report) {
+    /**
+     * Serializes the report to XML for environments where XPath still rules.
+     */
+    protected String toXml(final TypeMap report) {
         var builder = new StringBuilder();
         builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>").append(NL);
         appendXml("report", report, builder, 0);
         return builder.toString();
     }
 
-    private void appendXml(final String name, final Object value, final StringBuilder builder, final int indent) {
+    /**
+     * Recursively renders nested objects to XML nodes.
+     */
+    protected void appendXml(final String name, final Object value, final StringBuilder builder, final int indent) {
         builder.append(indent(indent)).append('<').append(name).append('>');
         if (value instanceof Map<?, ?> map) {
             builder.append(NL);
@@ -150,7 +179,10 @@ public class ReportExporter {
         builder.append("</").append(name).append('>').append(NL);
     }
 
-    private String toHtml(final TypeMap report) {
+    /**
+     * Crafts a standalone HTML report suitable for sharing with stakeholders.
+     */
+    protected String toHtml(final TypeMap report) {
         var partialNotes = report.asMap(FIELD_PARTIAL_NOTES);
         var unknown = report.asList(String.class, FIELD_UNKNOWN);
         var partialClients = report.asList(String.class, FIELD_PARTIAL_CLIENTS);
@@ -281,7 +313,10 @@ public class ReportExporter {
         return builder.toString();
     }
 
-    private String toMarkdown(final TypeMap report) {
+    /**
+     * Builds the Markdown summary consumed by GitHub Actions and humans alike.
+     */
+    protected String toMarkdown(final TypeMap report) {
         var partialNotes = report.asMap(FIELD_PARTIAL_NOTES);
         var unknown = report.asList(String.class, FIELD_UNKNOWN);
         var partialClients = report.asList(String.class, FIELD_PARTIAL_CLIENTS);
@@ -363,7 +398,10 @@ public class ReportExporter {
         return builder.toString();
     }
 
-    private static String escapeHtml(final String value) {
+    /**
+     * Escapes input for safe embedding inside generated HTML.
+     */
+    protected static String escapeHtml(final String value) {
         if (value == null) {
             return "";
         }
@@ -379,7 +417,10 @@ public class ReportExporter {
         return builder.toString();
     }
 
-    private static String escapeXml(final Object value) {
+    /**
+     * Escapes XML-specific entities (quotes included) for XML outputs.
+     */
+    protected static String escapeXml(final Object value) {
         if (value == null) {
             return "";
         }
@@ -398,7 +439,11 @@ public class ReportExporter {
         return builder.toString();
     }
 
-    private static String indent(final int spaces) {
+    /**
+     * Supplies a lightweight indentation helper to avoid {@code String.repeat}
+     * noise in tight loops.
+     */
+    protected static String indent(final int spaces) {
         if (spaces <= 0) {
             return "";
         }

@@ -1,4 +1,4 @@
-package org.nanonative.caniemail;
+package berlin.yuna.ehv.caniemail;
 
 import berlin.yuna.typemap.model.TypeMap;
 
@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Static accessor for the bundled Can I Email dataset. Provides convenient
+ * lookup tables and counts so validators can stay lean at runtime.
+ */
 public class CaniEmailFeatureDatabase {
 
     private static final TypeMap RAW_DATASET = loadDataset();
@@ -37,30 +41,51 @@ public class CaniEmailFeatureDatabase {
         KNOWN_OS_COUNT = KNOWN_OPERATING_SYSTEMS.size();
     }
 
-    private CaniEmailFeatureDatabase() {
+    /**
+     * Prevent instantiation—this class is a glorified map, not a pet.
+     */
+    protected CaniEmailFeatureDatabase() {
     }
 
+    /**
+     * Provides the slug-to-feature lookup map.
+     */
     public static Map<String, TypeMap> lookup() {
         return FEATURE_LOOKUP;
     }
 
+    /**
+     * Total number of known feature entries.
+     */
     public static int featureCount() {
         return KNOWN_FEATURE_COUNT;
     }
 
+    /**
+     * Number of distinct clients reported in the dataset.
+     */
     public static int clientCount() {
         return KNOWN_CLIENT_COUNT;
     }
 
+    /**
+     * Number of distinct operating systems reported in the dataset.
+     */
     public static int operatingSystemCount() {
         return KNOWN_OS_COUNT;
     }
 
+    /**
+     * Snapshot of all operating systems in deterministic order.
+     */
     public static List<String> operatingSystems() {
         return KNOWN_OPERATING_SYSTEMS;
     }
 
-    private static Map<String, TypeMap> buildLookup() {
+    /**
+     * Builds an index of searchable feature slugs (tags, attributes, CSS, misc).
+     */
+    protected static Map<String, TypeMap> buildLookup() {
         var lookup = new LinkedHashMap<String, TypeMap>();
         for (Map.Entry<Object, Object> entry : CaniEmailFeatureDatabase.RAW_DATASET.entrySet()) {
             var slug = String.valueOf(entry.getKey());
@@ -71,14 +96,21 @@ public class CaniEmailFeatureDatabase {
         return lookup;
     }
 
-    private static void collectClientInfo(final String client, final Object payload, final LinkedHashSet<String> clients, final LinkedHashSet<String> os) {
+    /**
+     * Records clients/operating systems contained in the dataset entry.
+     */
+    protected static void collectClientInfo(final String client, final Object payload, final LinkedHashSet<String> clients, final LinkedHashSet<String> os) {
         clients.add(client.toLowerCase(Locale.ROOT));
         if (payload instanceof Map<?, ?> map) {
             map.keySet().forEach(platform -> os.add(String.valueOf(platform).toLowerCase(Locale.ROOT)));
         }
     }
 
-    private static List<String> deriveFeatureNames(final String slug, final TypeMap entry) {
+    /**
+     * Produces canonical feature slugs for both HTML and CSS entries so the
+     * validator can match user tokens against dataset rows.
+     */
+    protected static List<String> deriveFeatureNames(final String slug, final TypeMap entry) {
         var names = new ArrayList<String>();
         var category = entry.asStringOpt("category").orElse("");
         var title = entry.asStringOpt("title").orElse(slug);
@@ -98,7 +130,11 @@ public class CaniEmailFeatureDatabase {
         return names;
     }
 
-    private static List<String> determineAttributeNames(final String slug, final String title) {
+    /**
+     * Resolves attribute names from dataset metadata, preferring explicit names
+     * in backticks and falling back to slug parsing.
+     */
+    protected static List<String> determineAttributeNames(final String slug, final String title) {
         var names = extractBacktickNames(title);
         if (!names.isEmpty()) {
             return names;
@@ -106,7 +142,11 @@ public class CaniEmailFeatureDatabase {
         return List.of(cleanAttributeName(slug));
     }
 
-    private static List<String> determineTagNames(final String slug, final String title) {
+    /**
+     * Resolves tag names from dataset metadata, recognizing heading ranges like
+     * {@code h1-h6}.
+     */
+    protected static List<String> determineTagNames(final String slug, final String title) {
         var names = extractTagNames(title);
         if (!names.isEmpty()) {
             return names;
@@ -119,7 +159,10 @@ public class CaniEmailFeatureDatabase {
         return List.of(cleaned);
     }
 
-    private static boolean looksLikeAttribute(final String title, final String slug) {
+    /**
+     * Quick heuristic to determine whether an entry describes an attribute.
+     */
+    protected static boolean looksLikeAttribute(final String title, final String slug) {
         var normalizedTitle = title.toLowerCase(Locale.ROOT);
         var normalizedSlug = slug.toLowerCase(Locale.ROOT);
         return normalizedTitle.contains("attribute")
@@ -128,7 +171,10 @@ public class CaniEmailFeatureDatabase {
                 || normalizedSlug.contains("data-");
     }
 
-    private static List<String> extractTagNames(final String title) {
+    /**
+     * Extracts tag names appearing inside {@code <angle brackets>} in titles.
+     */
+    protected static List<String> extractTagNames(final String title) {
         var names = new LinkedHashSet<String>();
         int index = 0;
         while (index < title.length()) {
@@ -161,7 +207,10 @@ public class CaniEmailFeatureDatabase {
         return List.copyOf(names);
     }
 
-    private static List<String> extractBacktickNames(final String text) {
+    /**
+     * Pulls attribute names that appear inside backticks in the dataset title.
+     */
+    protected static List<String> extractBacktickNames(final String text) {
         var names = new LinkedHashSet<String>();
         int index = 0;
         while (index < text.length()) {
@@ -186,7 +235,10 @@ public class CaniEmailFeatureDatabase {
         return List.copyOf(names);
     }
 
-    private static List<String> expandHeadingRange(final String value) {
+    /**
+     * Converts ranges like {@code h1-h3} into explicit slugs.
+     */
+    protected static List<String> expandHeadingRange(final String value) {
         int dashIndex = value.indexOf('-');
         if (dashIndex > 0 && dashIndex + 1 < value.length()) {
             var first = value.substring(0, dashIndex);
@@ -210,7 +262,10 @@ public class CaniEmailFeatureDatabase {
         return List.of();
     }
 
-    private static String cleanAttributeName(final String slug) {
+    /**
+     * Normalizes attribute slugs by removing known prefixes.
+     */
+    protected static String cleanAttributeName(final String slug) {
         var cleaned = cleanPrefix(slug, "html-");
         if (cleaned.endsWith("-attribute")) {
             return cleaned.substring(0, cleaned.length() - "-attribute".length());
@@ -218,7 +273,10 @@ public class CaniEmailFeatureDatabase {
         return cleaned;
     }
 
-    private static String cleanPrefix(final String slug, final String prefix) {
+    /**
+     * Removes the given prefix from the slug and lowercases the remainder.
+     */
+    protected static String cleanPrefix(final String slug, final String prefix) {
         var value = slug.startsWith(prefix) ? slug.substring(prefix.length()) : slug;
         if (value.endsWith("-element")) {
             value = value.substring(0, value.length() - "-element".length());
@@ -226,11 +284,18 @@ public class CaniEmailFeatureDatabase {
         return value.toLowerCase(Locale.ROOT);
     }
 
-    private static TypeMap loadDataset() {
+    /**
+     * Loads the JSON dataset bundled under {@code /caniemail/features.json}.
+     */
+    protected static TypeMap loadDataset() {
         return new TypeMap(readResource("caniemail/features-database.json"));
     }
 
-    private static TypeMap toTypeMap(final Object value) {
+    /**
+     * Safely casts arbitrary values to {@link TypeMap}, primarily for values
+     * coming from Jackson-less JSON parsing.
+     */
+    protected static TypeMap toTypeMap(final Object value) {
         if (value instanceof TypeMap typeMap) {
             return typeMap;
         }
@@ -243,7 +308,11 @@ public class CaniEmailFeatureDatabase {
         return new TypeMap();
     }
 
-    private static String readResource(final String resourcePath) {
+    /**
+     * Reads a UTF-8 resource. Throws an unchecked exception if the file is MIA
+     * so the caller does not accidentally swallow the error.
+     */
+    protected static String readResource(final String resourcePath) {
         try (InputStream stream = classLoader().getResourceAsStream(resourcePath)) {
             if (stream == null) {
                 throw new IllegalStateException("Missing resource: " + resourcePath);
@@ -254,7 +323,11 @@ public class CaniEmailFeatureDatabase {
         }
     }
 
-    private static ClassLoader classLoader() {
+    /**
+     * Provides a deterministic class loader for reading resources in both JVM
+     * and native-image scenarios.
+     */
+    protected static ClassLoader classLoader() {
         var loader = Thread.currentThread().getContextClassLoader();
         if (loader == null) {
             loader = CaniEmailFeatureDatabase.class.getClassLoader();

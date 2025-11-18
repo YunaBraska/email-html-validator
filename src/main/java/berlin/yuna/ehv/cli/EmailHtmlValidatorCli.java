@@ -1,8 +1,8 @@
-package org.nanonative.cli;
+package berlin.yuna.ehv.cli;
 
 import berlin.yuna.typemap.model.TypeMap;
 import com.microsoft.playwright.Playwright;
-import org.nanonative.validation.HtmlValidator;
+import berlin.yuna.ehv.validation.HtmlValidator;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -18,9 +18,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 
+/**
+ * Central command interface. Think of it as GLaDOS, but instead of neurotoxin
+ * it emits validation reports and the occasional Rickroll.
+ */
 public class EmailHtmlValidatorCli {
 
     public static final String OPTION_HELP = "--help";
@@ -31,6 +34,7 @@ public class EmailHtmlValidatorCli {
     public static final String OPTION_RICK_ROLL = "rick=";
     public static final String OPTION_SUMMARY = "--github-summary";
     public static final String OPTION_PLAYWRIGHT_VERSION = "--playwright-version";
+    public static final String OPTION_IGNORE_FEATURES = "--ignore-features";
     public static final String PLAYWRIGHT_VERSION = resolvePlaywrightVersion();
     private static final String DEFAULT_OUTPUT_DIR = "reports";
     private static final String ENV_PREFIX = "EHV_";
@@ -39,13 +43,21 @@ public class EmailHtmlValidatorCli {
     private static final String ENV_NO_BFSG = ENV_PREFIX + "NO_BFSG";
     private static final String ENV_BFSG_TAGS = ENV_PREFIX + "BFSG_TAGS";
     private static final String ENV_SUMMARY = ENV_PREFIX + "SUMMARY";
+    private static final String ENV_IGNORE_FEATURES = ENV_PREFIX + "IGNORE_FEATURES";
     private static final String ENV_GITHUB_OUTPUT = "GITHUB_OUTPUT";
     private static final String UNICORN_TAG = "unicorn";
     private static final String RICK_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
-    private EmailHtmlValidatorCli() {
+    /**
+     * Hidden constructor because nobody needs to instantiate a pure CLI brain.
+     */
+    protected EmailHtmlValidatorCli() {
     }
 
+    /**
+     * Entry point used by the CLI wrapper and tests alike.
+     * If something explodes, it at least exits with a meaningful status.
+     */
     public static void main(final String[] args) {
         int status = execute(args, System.out, System.err);
         if (status != 0) {
@@ -53,11 +65,19 @@ public class EmailHtmlValidatorCli {
         }
     }
 
-    static int execute(final String[] args, final PrintStream out, final PrintStream err) {
+    /**
+     * Processes the CLI arguments with live I/O streams.
+     * Returns the exit code instead of pulling the eject lever for you.
+     */
+    protected static int execute(final String[] args, final PrintStream out, final PrintStream err) {
         return execute(args, System.getenv(), out, err);
     }
 
-    static int execute(final String[] args, final Map<String, String> environment, final PrintStream out, final PrintStream err) {
+    /**
+     * Core execution path that accepts a mocked environment.
+     * Perfect for tests or other curious AIs.
+     */
+    protected static int execute(final String[] args, final Map<String, String> environment, final PrintStream out, final PrintStream err) {
         Objects.requireNonNull(out, "out");
         Objects.requireNonNull(err, "err");
         try {
@@ -82,6 +102,11 @@ public class EmailHtmlValidatorCli {
             var bfsgTags = unicornMode ? List.<String>of() : rawTags;
             TypeMap report = HtmlValidator.validate(html, runBfsg, bfsgTags);
             report.put(HtmlValidator.FIELD_PLAYWRIGHT_VERSION, PLAYWRIGHT_VERSION);
+            var ignoredFeatures = new ArrayList<>(HtmlValidator.DEFAULT_IGNORED_SLUGS);
+            if (options.containsKey(OPTION_IGNORE_FEATURES)) {
+                ignoredFeatures.addAll(options.asList(String.class, OPTION_IGNORE_FEATURES));
+            }
+            HtmlValidator.ignoreSlugs(report, ignoredFeatures);
             if (unicornMode) {
                 out.println("🦄 Weighted coverage certified by Unicorn Labs.");
             }
@@ -168,13 +193,19 @@ public class EmailHtmlValidatorCli {
                         options.put(OPTION_SUMMARY, true);
                         continue;
                     }
+                    case OPTION_IGNORE_FEATURES -> {
+                        if (index + 1 >= args.length) {
+                            throw new IllegalArgumentException("Missing feature list for " + arg);
+                        }
+                        options.put(OPTION_IGNORE_FEATURES, parseIgnoreFeatures(args[++index]));
+                        continue;
+                    }
                 }
                 var lower = arg.toLowerCase(Locale.ROOT);
                 if (lower.startsWith(OPTION_RICK_ROLL)) {
                     var value = arg.substring(arg.indexOf('=') + 1);
-                    if (isTruthy(value)) {
+                    if (isTruthy(value))
                         options.put(OPTION_RICK_ROLL, true);
-                    }
                     continue;
                 }
                 if (!builder.isEmpty()) {
@@ -192,7 +223,7 @@ public class EmailHtmlValidatorCli {
         return options;
     }
 
-    private static void printUsage(final PrintStream out) {
+    protected static void printUsage(final PrintStream out) {
         out.println("Email HTML Validator CLI");
         out.println("Usage:");
         out.println("  java -jar email-html-validator.jar [HTML|FILE|URL]");
@@ -205,11 +236,16 @@ public class EmailHtmlValidatorCli {
         out.println("  --bfsg-tags <tag,...>  Limit the BFSG audit to specific axe-core tags (e.g., wcag2aa,best-practice)");
         out.println("  --github-summary       Append the Markdown report to GITHUB_STEP_SUMMARY");
         out.println("  --playwright-version   Print the bundled Playwright version and exit");
+        out.println("  --ignore-features <feature,...>  Ignore unknown/partial features");
         out.println();
         out.println("Provide exactly one HTML source: inline HTML, a file path, an HTTP(S) URL, or pipe through stdin.");
     }
 
-    private static String resolvePlaywrightVersion() {
+    /**
+     * Retrieves the Playwright Java version shipped with the CLI. If the manifest
+     * plays hide-and-seek, we fall back to a polite "unknown".
+     */
+    protected static String resolvePlaywrightVersion() {
         var resource = "META-INF/maven/com.microsoft.playwright/playwright/pom.properties";
         try (var stream = Playwright.class.getClassLoader().getResourceAsStream(resource)) {
             if (stream != null) {
@@ -226,7 +262,10 @@ public class EmailHtmlValidatorCli {
         return "unknown";
     }
 
-    private static List<String> parseBfsgTags(final String raw) {
+    /**
+     * Parses the BFSG tag list, rejecting nonsense early.
+     */
+    protected static List<String> parseBfsgTags(final String raw) {
         if (raw == null) {
             throw new IllegalArgumentException("Tag list cannot be null");
         }
@@ -247,17 +286,44 @@ public class EmailHtmlValidatorCli {
         return List.copyOf(tags);
     }
 
-    static int exitCodeForReport(final TypeMap report) {
+    /**
+     * Splits and sanitizes the ignore list supplied by the user.
+     * No judgement—sometimes you just want less noise.
+     */
+    protected static List<String> parseIgnoreFeatures(final String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        var slugs = new ArrayList<String>();
+        for (String part : raw.split(",")) {
+            if (part == null) {
+                continue;
+            }
+            var trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                slugs.add(trimmed);
+            }
+        }
+        return slugs.isEmpty() ? List.of() : List.copyOf(slugs);
+    }
+
+    /**
+     * Determines the CLI exit code from the report payload.
+     */
+    protected static int exitCodeForReport(final TypeMap report) {
         if (report == null) {
             return 0;
         }
         return report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS)
-            .filter(status -> HtmlValidator.BFSG_STATUS_ERROR.equals(status))
+            .filter(HtmlValidator.BFSG_STATUS_ERROR::equals)
             .map(status -> 2)
             .orElse(0);
     }
 
-    private static void applyEnvironment(final TypeMap options, final Map<String, String> environment) {
+    /**
+     * Hydrates CLI defaults from environment variables and inputs.
+     */
+    protected static void applyEnvironment(final TypeMap options, final Map<String, String> environment) {
         if (environment == null) {
             return;
         }
@@ -278,18 +344,30 @@ public class EmailHtmlValidatorCli {
             options.put(OPTION_BFSG_TAGS, parseBfsgTags(tags));
         }
         var summary = firstNonBlank(environment, ENV_SUMMARY, "INPUT_GITHUB_SUMMARY");
-        if (summary != null && isTruthy(summary)) {
+        if (isTruthy(summary)) {
             options.put(OPTION_SUMMARY, true);
+        }
+        var ignore = firstNonBlank(environment, ENV_IGNORE_FEATURES, "INPUT_IGNORE_FEATURES");
+        if (ignore != null) {
+            options.put(OPTION_IGNORE_FEATURES, parseIgnoreFeatures(ignore));
         }
     }
 
-    private static boolean isUnicornMode(final List<String> tags) {
+    /**
+     * Detects if the caller requested unicorn mode (only the mystical
+     * {@code unicorn} tag is present) which disables BFSG and prints a wink.
+     */
+    protected static boolean isUnicornMode(final List<String> tags) {
         return tags != null
             && tags.size() == 1
             && UNICORN_TAG.equalsIgnoreCase(tags.getFirst());
     }
 
-    private static void writeGithubOutputs(final TypeMap report, final Path outputDir, final Map<String, String> environment) {
+    /**
+     * Writes summary metrics to {@code GITHUB_OUTPUT} so other workflow steps
+     * can consume them without parsing files.
+     */
+    protected static void writeGithubOutputs(final TypeMap report, final Path outputDir, final Map<String, String> environment) {
         if (environment == null) {
             return;
         }
@@ -310,6 +388,8 @@ public class EmailHtmlValidatorCli {
         appendOutput(builder, "report_md", outputDir.resolve("report.md").toAbsolutePath().toString());
         appendOutput(builder, "report_xml", outputDir.resolve("report.xml").toAbsolutePath().toString());
         appendOutput(builder, "summary_md", outputDir.resolve("report.md").toAbsolutePath().toString());
+        appendOutput(builder, "ignored_features", String.join(",", report.asList(String.class, HtmlValidator.FIELD_IGNORED_FEATURES)));
+        appendOutput(builder, "ignored_feature_count", String.valueOf(report.asLongOpt(HtmlValidator.FIELD_IGNORED_COUNT).orElse(0L)));
         try {
             Files.writeString(Path.of(outputFile), builder.toString(), StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND);
@@ -318,7 +398,11 @@ public class EmailHtmlValidatorCli {
         }
     }
 
-    private static void writeGithubSummary(final Path outputDir, final Map<String, String> environment) {
+    /**
+     * Appends the Markdown report to {@code GITHUB_STEP_SUMMARY}, effectively
+     * leaving a sticky note for the workflow run.
+     */
+    protected static void writeGithubSummary(final Path outputDir, final Map<String, String> environment) {
         if (environment == null) {
             return;
         }
@@ -339,21 +423,43 @@ public class EmailHtmlValidatorCli {
         }
     }
 
-    private static void appendOutput(final StringBuilder builder, final String key, final String value) {
-        builder.append(key).append('=').append(value == null ? "" : value).append(System.lineSeparator());
+    /**
+     * Adds a single key/value pair to the output buffer with GitHub-friendly
+     * escaping.
+     */
+    protected static void appendOutput(final StringBuilder builder, final String key, final String value) {
+        builder.append(key)
+            .append('=')
+            .append(value == null ? "" : sanitizeGithubOutput(value))
+            .append(System.lineSeparator());
     }
 
-    private static String percentage(final TypeMap report, final String field) {
+    /**
+     * Escapes newline and percent characters so {@code GITHUB_OUTPUT} parsing
+     * stays sane.
+     */
+    protected static String sanitizeGithubOutput(final String value) {
+        return value.replace("%", "%25")
+            .replace("\r", "%0D")
+            .replace("\n", "%0A");
+    }
+
+    /**
+     * Renders the stored percentage with two decimals for consistent logging.
+     */
+    protected static String percentage(final TypeMap report, final String field) {
         return report.asBigDecimalOpt(field)
             .orElse(BigDecimal.ZERO)
             .setScale(2, RoundingMode.HALF_UP)
             .toPlainString();
     }
 
-    private static boolean isTruthy(final String value) {
-        if (value == null) {
+    /**
+     * Treats common yes-like strings as true. Everything else is lies.
+     */
+    protected static boolean isTruthy(final String value) {
+        if (value == null)
             return false;
-        }
         var normalized = value.trim().toLowerCase(Locale.ROOT);
         return normalized.equals("1")
             || normalized.equals("true")
@@ -361,10 +467,12 @@ public class EmailHtmlValidatorCli {
             || normalized.equals("on");
     }
 
-    private static String firstNonBlank(final Map<String, String> environment, final String... keys) {
-        if (environment == null) {
+    /**
+     * Returns the first available environment variable among the provided keys.
+     */
+    protected static String firstNonBlank(final Map<String, String> environment, final String... keys) {
+        if (environment == null)
             return null;
-        }
         for (String key : keys) {
             if (key == null) {
                 continue;

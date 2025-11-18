@@ -1,165 +1,239 @@
 # Email HTML Validator
 
-Small CLI that inspects HTML snippets or templates and reports which e‑mail clients fully, partially, or never render
-the detected tags, attributes, and CSS rules. The validator ships a Can I Email dataset snapshot and produces JSON, XML,
-HTML, and Markdown reports per run.
+[![Issues][issues_shield]][issues_link]
+[![Commit][commit_shield]][commit_link]
+[![License][license_shield]][license_link]
+[![Central][central_shield]][central_link]
+[![Tag][tag_shield]][tag_link]
+[![Javadoc][javadoc_shield]][javadoc_link]
+[![Size][size_shield]][size_shield]
+![Label][java_version]
 
-## Features
+Validate newsletter templates the fast way. Point this tool at inline HTML, files, stdin, or URLs and it will tell you
+which features are accepted, partial, rejected, or unknown across the Can I Email dataset. Optional BFSG audits add a
+thin accessibility sanity check powered by Playwright + axe-core.
 
-- Scans inline HTML, files, URLs, or stdin and normalizes everything into a single pass of distinct features.
-- Computes weighted support percentages and lists clients with partial or rejected coverage.
-- Writes console output plus JSON/XML/HTML/Markdown artifacts (see `--output-dir`).
-- GraalVM native builds for Linux/Windows/macOS, backed by Docker multi‑arch images and release workflows.
-- Optional BFSG compliance audit (basic accessibility heuristics) via `--bfsg`, with selectable axe-core tag sets.
+## Choose Your Interface
 
-## Requirements
+Pick the runtime that matches your workflow:
 
-- Java 21 and Maven 3.9+ (or use the bundled `./mvnw` wrapper).
-- GraalVM 21+ with `native-image` for native builds.
-- BFSG audits rely on Playwright’s Chromium runtime. Linux hosts need the system libraries documented in
-  the [Playwright dependency guide](https://playwright.dev/java/docs/ci#linux-dependencies). A typical installation
-  looks like:
-  [./mvnw -B -q exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"](https://playwright.dev/java/docs/ci)
-  or [npx playwright install-deps](https://playwright.dev/docs/ci)
-  or [playwright install --with-deps](https://playwright.dev/python/docs/ci)
-  (The published Docker image ships with these libraries preinstalled.)
-- If those libraries are unavailable (for example, in slim CI images), run the CLI with `--no-bfsg` and set
-  `RUN_BFSG_TESTS=false` so the integration tests skip BFSG assertions.
-- Dataset regeneration (`CaniEmailDatasetTest`) expects the upstream markdown export under
-  `src/test/resources/caniemail/_features`. Clone [maizzle/caniemail](https://github.com/maizzle/caniemail) when you
-  need to refresh it.
+| Option                              | When to use it                                     |
+|-------------------------------------|----------------------------------------------------|
+| **CLI**                             | Quick local checks; plug into any shell script     |
+| **Java DSL**                        | Keep validations inside JVM tests or build plugins |
+| **GitHub Action**                   | Validate pull requests with zero scripting         |
+| **Maven Central / GitHub Packages** | Import as a library and embed the validator        |
+| **Docker image**                    | Containerized runs or CI systems without Java      |
 
-## Usage
+Each interface shares the same reporting core and produces JSON, XML, HTML, and Markdown artifacts.
 
-```
-email-html-validator [OPTIONS] <HTML|FILE|URL|-> 
-```
+---
 
-| Option                  | Description                                                                              |
-|-------------------------|------------------------------------------------------------------------------------------|
-| `--output-dir <dir>`    | Persist JSON, XML, HTML, and Markdown reports; defaults to `./reports`                   |
-| `--no-bfsg`             | Skip the BFSG compliance audit (enabled by default; uses axe-core + Playwright)          |
-| `--bfsg-tags <tag,...>` | Restrict the BFSG audit to comma-separated axe-core tags (e.g., `wcag2aa,best-practice`) |
-| `--help`                | Show usage and exit                                                                      |
-| `--github-summary`      | Append the generated Markdown report to `GITHUB_STEP_SUMMARY` (GitHub Actions)           |
-| `--playwright-version`  | Print the bundled Playwright Java client version and exit                                |
-
-- Provide inline HTML (`"<table>...</table>"`), a local file path, or an `http(s)` URL as the positional argument.
-- Use `-` to read from stdin (e.g., `cat mail.html \| email-html-validator - --output-dir reports`). Passing no source
-  prints an error instead of blocking.
-- Exit codes: `0` success, `1` input/usage error, `2` runtime failure (network, validator bug, BFSG/Playwright error, etc.).
-
-### Environment Overrides
-
-Every CLI flag can be mirrored through environment variables with the short `EHV_` prefix. These are handy for GitHub
-Actions and Docker wrappers:
-
-| Variable         | Effect                                                   |
-|------------------|----------------------------------------------------------|
-| `EHV_HELP`       | When truthy (`true`, `1`, `yes`), prints usage and exits |
-| `EHV_OUTPUT_DIR` | Sets the report directory (defaults to `./reports`)      |
-| `EHV_NO_BFSG`    | Truthy values disable the BFSG audit (`--no-bfsg`)       |
-| `EHV_BFSG_TAGS`  | Comma-separated axe-core tags (same as `--bfsg-tags`)    |
-| `EHV_SUMMARY`    | Truthy values enable `--github-summary` behavior         |
-
-Set `PLAYWRIGHT_CLI_DIR` (or `EHV_PLAYWRIGHT_CLI_DIR`) to point at a Playwright CLI installation when you provision the
-Node binary and `package/` directory yourself. The validator forwards that path to Playwright so the BFSG audit can reuse
-existing toolchains without embedding them into the JAR or native binary.
-
-*Bonus:* set `EHV_BFSG_TAGS=unicorn` to get a whimsical console shout-out. Append `rick=1` to any CLI invocation if you
-want the dataset reference to lead somewhere… unexpected.
-
-## Developer Quickstart
+## CLI
 
 ```bash
-mvn -q test              # run component & dataset tests
-mvn -q package           # build the runnable JAR in target/
-java -jar target/email-html-validator-*.jar "<html><body><table></table></body></html>"
-java -jar target/email-html-validator-*.jar --output-dir reports template.html
-cat mail.html | java -jar target/email-html-validator-*.jar - --output-dir reports
+./email-html-validator [OPTIONS] <HTML | FILE | URL | ->
 ```
 
-Reports land in the directory you point to (one per format). Console output also includes dataset metadata, the bundled
-Playwright version (same value as `--playwright-version`), and unknown features.
+Grab the latest binary from the [Releases page](https://github.com/YunaBraska/email-html-validator/releases) or build it
+yourself via `./mvnw package`. We publish:
 
-### Preinstalled Playwright CLI
+- `email-html-validator.jar` (portable JAR for any Java 21+ runtime)
+- `email-html-validator.native` (Linux x64, Linux arm64, macOS x64/arm64, Windows x64 via GraalVM)
+- Docker image `ghcr.io/yunabraska/email-html-validator:<tag>`
 
-CI environments that already host the Playwright CLI (Node binary + `package/` folder) can slim both the runnable JAR
-and GraalVM binary:
+| Flag                           | Description                                                                        |
+|--------------------------------|------------------------------------------------------------------------------------|
+| `--output-dir <dir>`           | Folder for JSON/XML/HTML/Markdown reports (default `./reports`)                    |
+| `--no-bfsg`                    | Skip the BFSG accessibility audit                                                  |
+| `--bfsg-tags <tag,...>`        | Limit BFSG rules to comma-separated axe-core tags (e.g., `wcag2aa,best-practice`)  |
+| `--ignore-features <slug,...>` | Suppress noisy feature slugs (`tag:html`,`tag:head`,`tag:body` ignored by default) |
+| `--github-summary`             | Mirror the Markdown report to `GITHUB_STEP_SUMMARY`                                |
+| `--playwright-version`         | Print the bundled Playwright Java version and exit                                 |
 
-1. Extract or install the CLI once (e.g., `npx playwright install` or unpacking the Maven `driver-bundle` for your OS).
-2. Point `PLAYWRIGHT_CLI_DIR` or `EHV_PLAYWRIGHT_CLI_DIR` at that directory so the BFSG audit reuses it at runtime.
-3. Build with `-Ppreinstalled-playwright` to mark the Playwright driver bundle as `provided`, removing the embedded Node
-   runtimes from the shaded JAR and native image.
+- Provide inline HTML, a path, an `http(s)` URL, or `-` for stdin.
+- Exit codes: `0` success, `1` usage/source error, `2` runtime/Playwright/BFSG failure.
+- Environment twins (e.g., `EHV_OUTPUT_DIR`, `EHV_NO_BFSG`, `EHV_BFSG_TAGS`, `EHV_IGNORE_FEATURES`, `EHV_SUMMARY`) let you
+  drive the CLI from containers and Actions without long flag lists.
 
-The default build keeps shipping the driver bundle for portability, but the profile trims ~160 MB from the JAR and drops
-hundreds of megabytes from the native image when you're willing to manage the CLI externally.
-
-### GitHub Outputs
-
-When `GITHUB_OUTPUT` is set (as in GitHub Actions), the CLI appends reusable statistics:
-
-| Output        | Description                                           |
-|---------------|-------------------------------------------------------|
-| `accepted`    | Weighted accepted percentage (string, two decimals)   |
-| `partial`     | Weighted partial percentage                           |
-| `rejected`    | Weighted rejected percentage                          |
-| `unknown`     | Comma-separated unknown feature identifiers           |
-| `bfsg_status` | BFSG status (`pass`, `fail`, `error`, or `skipped`)   |
-| `bfsg_issues` | Number of BFSG violations in the last run             |
-| `report_dir`  | Absolute path to the directory containing all reports |
-| `report_json` | Absolute path to `report.json`                        |
-| `report_html` | Absolute path to `report.html`                        |
-| `report_md`   | Absolute path to `report.md`                          |
-| `report_xml`  | Absolute path to `report.xml`                         |
-| `summary_md`  | Markdown content written to `GITHUB_STEP_SUMMARY`     |
-
-## Native Builds
-
-- **Local GraalVM:** install GraalVM 21 with `native-image` and run `mvn -q -DskipTests -Pnative package`. The native
-  binary appears as `target/email-html-validator.native` (or `.exe` on Windows). Native executables don’t embed
-  Chromium, so pass `--no-bfsg` if you want to avoid the inevitable “BFSG compliance: error (Failed to create driver)”
-  message.
-- **Docker multi‑arch:** `docker build -t email-html-validator-native -f Dockerfile_Native .` validates the binary
-  inside the container. Export artifacts with `docker build --target export -f Dockerfile_Native . --output target`.
-- **CI release:** `.github/workflows/github_release.yml` creates JARs plus native executables for Linux (x64/ARM64 via
-  Docker), macOS, and Windows. Each binary is executed against a fixture during the build to ensure it works before
-  publishing.
-
-## BFSG Compliance (axe-core)
-
-- Uses `com.deque.html.axe-core:playwright` plus `com.microsoft.playwright` to launch headless Chromium, inject
-  `axe.min.js`, and report violations inline. The first run downloads the Playwright browsers (~120 MB) into
-  `~/.cache/ms-playwright/` (respect `PLAYWRIGHT_BROWSERS_PATH` if you want a custom cache location).
-- By default, the CLI runs the entire axe-core rule catalog. Pass `--bfsg-tags` with comma-separated identifiers (e.g.,
-  `wcag2a,wcag2aa,best-practice`) to limit the audit to specific tags. Pair it with `--no-bfsg` when the Playwright
-  runtime is unavailable (for example, in restricted native builds).
-
-## Continuous Delivery
-
-- `.github/workflows/test_workflow.yml` runs on pushes/PRs, executes `mvn test`, builds the CLI, and validates a quick
-  sample run of the JAR.
-- `.github/workflows/github_release.yml` can be triggered manually or from other workflows to build signed artifacts and
-  publish them as GitHub Releases.
-
-## CLI Tips
+### Example
 
 ```bash
-# Validate remote templates
-java -jar target/email-html-validator-*.jar --output-dir reports https://example.com/email.html
+# JAR (all platforms)
+java -jar email-html-validator.jar --output-dir reports "<html><body><table></table></body></html>"
 
-# Read from stdin
-cat snippet.html | java -jar target/email-html-validator-*.jar - --output-dir reports/out
+# Native binary (Linux/macOS)
+./email-html-validator.native template.html --no-bfsg --output-dir reports/native
 
-# Native binary (Linux example)
-./target/email-html-validator.native sample.html --no-bfsg --output-dir reports/native
+# Windows
+email-html-validator.exe template.html --bfsg
 
-# Run BFSG audit
-java -jar target/email-html-validator.jar --bfsg "<html><body><img src='hero.png'></body></html>"
-
-# Run BFSG audit against specific axe-core tags
-java -jar target/email-html-validator.jar --bfsg-tags wcag2a,wcag2aa "<html><body><img src='hero.png'></body></html>"
+# Stream from stdin
+cat template.html | ./email-html-validator.native - --no-bfsg
 ```
 
-The CLI exits with `1` for option/source errors and `2` for runtime failures, which the tests and workflows assert to
-keep the UX predictable.
+---
+
+## Java DSL
+
+Embed validations inside tests or build plugins via `EmailHtmlValidatorRequest`:
+
+```java
+import berlin.yuna.ehv.validation.EmailValidator;
+import java.nio.file.Path;
+import java.util.List;
+
+var report = EmailValidator.html("<table data-hero></table>")
+    .bfsg(true)
+    .bfsgTags(List.of("wcag2aa", "best-practice"))
+    .ignoreFeatures(List.of("attribute:data-hero"))
+    .outputDirectory(Path.of("build/reports/email"))
+    .run();
+
+var accepted = report.asBigDecimal("accepted");
+```
+
+- The `run()` call returns a `TypeMap` containing the same data as the CLI JSON report.
+- Call `disableReportExport()` if you only want the in-memory payload.
+
+Add the dependency from Maven Central (or GitHub Packages):
+
+```xml
+<dependency>
+  <groupId>berlin.yuna</groupId>
+  <artifactId>email-html-validator</artifactId>
+  <version>${email-html-validator.version}</version>
+</dependency>
+```
+
+---
+
+## GitHub Action
+
+Drop the Action into any workflow to fail builds when coverage falls short:
+
+```yaml
+- name: "Validate HTML"
+  uses: YunaBraska/email-html-validator@main
+  with:
+    source: ${{ github.workspace }}/newsletter.html
+    output_dir: reports/ci
+    bfsg_tags: wcag2aa,best-practice
+    github_summary: true
+```
+
+Outputs (`accepted`, `partial`, `rejected`, `bfsg_status`, `report_json`, etc.) can feed follow-up steps. Provide `source`
+as inline HTML, a repo path, or `-` for stdin.
+
+---
+
+## GitHub Packages / Maven Central
+
+Prefer to download from GitHub Packages? Add the repository plus dependency:
+
+```xml
+<repositories>
+  <repository>
+    <id>github</id>
+    <url>https://maven.pkg.github.com/YunaBraska/email-html-validator</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>berlin.yuna</groupId>
+  <artifactId>email-html-validator</artifactId>
+  <version>${email-html-validator.version}</version>
+</dependency>
+```
+
+Use your `GITHUB_TOKEN` (or a PAT) as the repo credential. The artifact exposes the same API used by the DSL example.
+
+---
+
+## Docker Image
+
+Run validations without installing Java:
+
+```bash
+docker run --rm \
+  -v "$PWD/reports:/reports" \
+  ghcr.io/yunabraska/email-html-validator:latest \
+  --output-dir /reports "<title>Ship it</title>"
+```
+
+- Mount a host folder to collect the reports.
+- Add `--no-bfsg` if Playwright browsers are unavailable inside your environment.
+- Set `PLAYWRIGHT_CLI_DIR` or `EHV_*` variables with `-e` to customize behavior.
+
+---
+
+## Reports & Outputs
+
+Every interface writes the same artifacts:
+
+| File          | Purpose                                                      |
+|---------------|--------------------------------------------------------------|
+| `report.json` | Raw TypeMap serialized for automation                        |
+| `report.xml`  | Deterministic XML for XPath/XSLT pipelines                   |
+| `report.html` | Shareable human report with percentages, notes, BFSG results |
+| `report.md`   | Markdown twin; appended to GitHub summaries when requested   |
+
+`unknownFeatures`, `ignoredFeatures`, BFSG issue counts, and partial client lists appear across all formats. The CLI and
+Action also emit quick stats to `GITHUB_OUTPUT` (`accepted`, `partial`, `rejected`, `bfsg_status`, etc.).
+
+Each JSON/XML/TypeMap payload contains:
+
+- `accepted`, `partial`, `rejected` – weighted percentages
+- `partialNotes`, `unknownFeatures`, `ignoredFeatures`, `ignoredFeatureCount`
+- `partialClients`, `rejectedClients`, `featureCount`, `clientCount`, `operatingSystemCount`
+- `bfsgStatus`, `bfsgIssueCount`, `bfsgIssues` (when BFSG is enabled)
+- `playwrightVersion`, `caniemailUrl`, and the exported file paths
+
+---
+
+## Playwright & BFSG Requirements
+
+- BFSG checks launch headless Chromium through the Playwright Java bindings shipped with the tool.
+- Linux hosts need the dependencies listed in the [Playwright CI guide](https://playwright.dev/java/docs/ci#linux-dependencies).
+  When that’s not feasible, run the validator with `--no-bfsg` or `EHV_NO_BFSG=true`.
+- Set `PLAYWRIGHT_CLI_DIR`/`EHV_PLAYWRIGHT_CLI_DIR` when you install the Playwright driver bundle yourself (for example, in
+  multi-stage Docker builds). The CLI exposes `--playwright-version` so you can fetch matching artifacts.
+
+---
+
+## Developer Notes
+
+Want to contribute or run the full suite locally?
+
+- `./mvnw clean verify` – build the JAR, run CLI black-box tests, regenerate fixtures.
+- `./mvnw -q -DskipTests -Pnative package` – build a GraalVM binary (`target/email-html-validator.native`).
+- `Dockerfile` and `Dockerfile_Native` ship the CLI/native images used for releases.
+- BFSG tests expect Playwright browsers. Install them once via
+  `./mvnw -B -q exec:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium --with-deps"` or set
+  `PLAYWRIGHT_BROWSERS_PATH` to a cached location.
+- The Can I Email dataset snapshot lives under `src/main/resources/caniemail`. To regenerate, place upstream markdown files
+  in `src/test/resources/caniemail/_features` and run `CaniEmailDatasetTest`.
+
+Questions, bugs, or feature ideas? Open an issue and mention how you run the validator (CLI, Action, Docker, etc.) so we
+can reproduce quickly.
+
+[build_shield]: https://github.com/YunaBraska/email-html-validator/workflows/MVN_RELEASE/badge.svg
+[build_link]: https://github.com/YunaBraska/email-html-validator/actions?query=workflow%3AMVN_RELEASE
+[maintainable_shield]: https://img.shields.io/codeclimate/maintainability/YunaBraska/email-html-validator?style=flat-square
+[maintainable_link]: https://codeclimate.com/github/YunaBraska/email-html-validator/maintainability
+[coverage_shield]: https://img.shields.io/codeclimate/coverage/YunaBraska/email-html-validator?style=flat-square
+[coverage_link]: https://codeclimate.com/github/YunaBraska/email-html-validator/test_coverage
+[issues_shield]: https://img.shields.io/github/issues/YunaBraska/email-html-validator?style=flat-square
+[issues_link]: https://github.com/YunaBraska/email-html-validator/issues/new/choose
+[commit_shield]: https://img.shields.io/github/last-commit/YunaBraska/email-html-validator?style=flat-square
+[commit_link]: https://github.com/YunaBraska/email-html-validator/commits
+[license_shield]: https://img.shields.io/github/license/YunaBraska/email-html-validator?style=flat-square
+[license_link]: https://github.com/YunaBraska/email-html-validator/blob/main/LICENSE
+[central_shield]: https://img.shields.io/maven-central/v/berlin.yuna/email-html-validator?style=flat-square
+[central_link]: https://central.sonatype.com/artifact/berlin.yuna/email-html-validator
+[tag_shield]: https://img.shields.io/github/v/tag/YunaBraska/email-html-validator?style=flat-square
+[tag_link]: https://github.com/YunaBraska/email-html-validator/releases
+[javadoc_shield]: https://img.shields.io/badge/javadoc-online-green?style=flat-square
+[javadoc_link]: https://javadoc.io/doc/berlin.yuna/email-html-validator
+[size_shield]: https://img.shields.io/github/repo-size/YunaBraska/email-html-validator?style=flat-square
+[java_version]: https://img.shields.io/badge/Java-21-red?style=flat-square

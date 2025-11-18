@@ -1,9 +1,9 @@
-package org.nanonative.validation;
+package berlin.yuna.ehv.validation;
 
 import berlin.yuna.typemap.model.TypeMap;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
-import org.nanonative.caniemail.CaniEmailFeatureDatabase;
+import berlin.yuna.ehv.caniemail.CaniEmailFeatureDatabase;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -13,6 +13,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+/**
+ * Internal parser utilities that translate HTML into the normalized feature
+ * tokens consumed by {@link HtmlValidator}. It is the nosy neighbor that logs
+ * every tag, attribute, and CSS quirk.
+ */
 class ValidatorHelper {
 
     private static final Pattern PROPERTY_SPLIT = Pattern.compile(";+");
@@ -21,9 +26,16 @@ class ValidatorHelper {
     private static final Pattern MEDIA_DEVICE_PIXEL_PATTERN = Pattern.compile("@media[^\\{]*-webkit-device-pixel-ratio", Pattern.CASE_INSENSITIVE);
     private static final Set<String> IGNORED_TAGS = Set.of("#root");
 
-    private ValidatorHelper() {
+    /**
+     * No instantiation required—everything here is static brainpower.
+     */
+    protected ValidatorHelper() {
     }
 
+    /**
+     * Builds a quick-lookup map of every feature slug in the dataset so runtime
+     * parsing does not involve linear scans.
+     */
     static TypeMap buildLookup() {
         var lookup = new TypeMap();
         for (Map.Entry<String, TypeMap> entry : CaniEmailFeatureDatabase.lookup().entrySet()) {
@@ -32,18 +44,18 @@ class ValidatorHelper {
         return lookup;
     }
 
+    /**
+     * Walks the DOM and emits normalized feature tokens (tags, attributes,
+     * CSS properties, special at-rules) present in the document.
+     */
     static List<String> listElements(final String html) {
         var tokens = new ArrayList<String>();
         var declaredTags = declaredTags(html);
         var document = Jsoup.parse(html);
         for (Element element : document.getAllElements()) {
             var tagName = element.tagName().toLowerCase(Locale.ROOT);
-            if (IGNORED_TAGS.contains(tagName)) {
+            if (IGNORED_TAGS.contains(tagName) || !shouldIncludeTag(tagName, declaredTags))
                 continue;
-            }
-            if (!shouldIncludeTag(tagName, declaredTags)) {
-                continue;
-            }
             tokens.add("tag:" + tagName);
             element.attributes().forEach(attribute -> {
                 var key = attribute.getKey().toLowerCase(Locale.ROOT);
@@ -61,14 +73,22 @@ class ValidatorHelper {
         return tokens;
     }
 
-    private static boolean shouldIncludeTag(final String tagName, final Set<String> declaredTags) {
+    /**
+     * Guards against phantom tags by checking if the tag actually exists in the
+     * source before we report it.
+     */
+    protected static boolean shouldIncludeTag(final String tagName, final Set<String> declaredTags) {
         if (declaredTags.isEmpty()) {
             return false;
         }
         return declaredTags.contains(tagName);
     }
 
-    private static Set<String> declaredTags(final String html) {
+    /**
+     * Scans the raw HTML for declared tags so fragments do not invent elements
+     * out of thin air.
+     */
+    protected static Set<String> declaredTags(final String html) {
         if (html == null || html.isBlank()) {
             return Set.of();
         }
@@ -76,32 +96,36 @@ class ValidatorHelper {
         var matcher = DECLARED_TAG_PATTERN.matcher(html);
         while (matcher.find()) {
             var name = matcher.group(1);
-            if (name == null || name.isBlank()) {
+            if (name == null || name.isBlank())
                 continue;
-            }
             var normalized = name.toLowerCase(Locale.ROOT);
-            if (normalized.startsWith("!") || normalized.startsWith("?")) {
+            if (normalized.startsWith("!") || normalized.startsWith("?"))
                 continue;
-            }
             tags.add(normalized);
         }
         return tags;
     }
 
-    private static List<String> parseCss(final String cssBlock) {
+    /**
+     * Tokenizes inline style declarations into {@code css:property} slugs.
+     */
+    protected static List<String> parseCss(final String cssBlock) {
         if (cssBlock == null || cssBlock.isBlank()) {
             return List.of();
         }
         return PROPERTY_SPLIT.splitAsStream(cssBlock)
             .map(String::trim)
-            .filter(chunk -> !chunk.isEmpty() && chunk.contains(":"))
+            .filter(chunk -> chunk.contains(":"))
             .map(chunk -> chunk.substring(0, chunk.indexOf(':')).trim().toLowerCase(Locale.ROOT))
             .filter(property -> !property.isEmpty())
             .map(property -> "css:" + property)
             .toList();
     }
 
-    private static void collectAtRules(final String cssBlock, final List<String> tokens) {
+    /**
+     * Records notable at-rules (media queries, DPR hacks) as synthetic features.
+     */
+    protected static void collectAtRules(final String cssBlock, final List<String> tokens) {
         if (cssBlock == null || cssBlock.isBlank()) {
             return;
         }

@@ -1,4 +1,4 @@
-package org.nanonative.validation;
+package berlin.yuna.ehv.validation;
 
 import com.deque.html.axecore.playwright.AxeBuilder;
 import com.deque.html.axecore.results.AxeResults;
@@ -27,6 +27,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Runs the BFSG (Better Friends of Screenreader Guild) audit by feeding the
+ * HTML snippet through Playwright + axe-core. Handles native-image quirks and
+ * produces human-readable violations.
+ */
 class BfsgComplianceValidator {
 
     private static final boolean NATIVE_IMAGE = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
@@ -44,13 +49,22 @@ class BfsgComplianceValidator {
     public static final String STATUS_ERROR = "error";
     public static final String STATUS_PASS = "pass";
 
-    private BfsgComplianceValidator() {
+    /**
+     * Static helper—instantiation would only make it self-conscious.
+     */
+    protected BfsgComplianceValidator() {
     }
 
+    /**
+     * Runs the BFSG audit with default settings.
+     */
     static BfsgResult evaluate(final String html) {
         return evaluate(html, List.of());
     }
 
+    /**
+     * Runs the BFSG audit while limiting axe-core to the provided tag list.
+     */
     static BfsgResult evaluate(final String html, final List<String> tags) {
         if (html == null || html.isBlank()) {
             return new BfsgResult(STATUS_PASS, List.of());
@@ -90,7 +104,11 @@ class BfsgComplianceValidator {
         }
     }
 
-    private static boolean shouldIgnoreRule(final Rule rule, final boolean htmlIsFragment) {
+    /**
+     * Ignores structural rules when only a fragment was supplied. Otherwise
+     * axe-core would yell about missing {@code <html>} forever.
+     */
+    protected static boolean shouldIgnoreRule(final Rule rule, final boolean htmlIsFragment) {
         if (!htmlIsFragment || rule == null)
             return false;
         return FRAGMENT_DOCUMENT_RULES.contains(Optional.ofNullable(rule.getId())
@@ -98,11 +116,19 @@ class BfsgComplianceValidator {
                 .orElse(""));
     }
 
-    private static boolean isHtmlFragment(final String html) {
+    /**
+     * Determines whether the provided HTML looks like a full document or a
+     * snippet missing the {@code <html>} root.
+     */
+    protected static boolean isHtmlFragment(final String html) {
         return html == null || !html.toLowerCase(Locale.ROOT).contains("<html");
     }
 
-    private static List<String> normalizeTags(final List<String> tags) {
+    /**
+     * Sanitizes the optional BFSG tag filter: trims, lowercases, and removes
+     * duplicates so axe-core stays focused.
+     */
+    protected static List<String> normalizeTags(final List<String> tags) {
         if (tags == null || tags.isEmpty())
             return List.of();
 
@@ -123,7 +149,11 @@ class BfsgComplianceValidator {
         return unique.isEmpty() ? List.of() : List.copyOf(unique);
     }
 
-    private static void configurePlaywrightCliDir() {
+    /**
+     * Ensures {@code playwright.cli.dir} is set so the Java bindings can find
+     * the downloaded driver bundle, both on JVM and native-image.
+     */
+    protected static void configurePlaywrightCliDir() {
         if (PLAYWRIGHT_CLI_READY.get()) {
             return;
         }
@@ -144,7 +174,11 @@ class BfsgComplianceValidator {
         }
     }
 
-    private static Optional<Path> resolvePlaywrightCliDir() {
+    /**
+     * Checks both {@code PLAYWRIGHT_CLI_DIR} and {@code EHV_PLAYWRIGHT_CLI_DIR}
+     * for an installed CLI directory.
+     */
+    protected static Optional<Path> resolvePlaywrightCliDir() {
         return Stream.of(ENV_PLAYWRIGHT_CLI_DIR, ENV_EHV_PLAYWRIGHT_CLI_DIR)
                 .map(System::getenv)
                 .filter(value -> value != null && !value.isBlank())
@@ -154,7 +188,11 @@ class BfsgComplianceValidator {
                 .findFirst();
     }
 
-    private static boolean playwrightCliUnavailable(final Throwable throwable) {
+    /**
+     * Heuristically detects when the Playwright driver jars are missing, so we
+     * can raise a targeted error message instead of a stack trace.
+     */
+    protected static boolean playwrightCliUnavailable(final Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
             if (current instanceof ClassNotFoundException missing
@@ -168,7 +206,11 @@ class BfsgComplianceValidator {
         return false;
     }
 
-    private static Optional<String> mountNativeResourceFileSystem() {
+    /**
+     * Native-image ships axe-core resources inside the binary. This method mounts
+     * the virtual {@code resource:/} filesystem once so Playwright can reach it.
+     */
+    protected static Optional<String> mountNativeResourceFileSystem() {
         if (!NATIVE_IMAGE || RESOURCE_FS_READY.get()) {
             return Optional.empty();
         }
@@ -189,7 +231,11 @@ class BfsgComplianceValidator {
         }
     }
 
-    private static String formatViolation(final Rule rule) {
+    /**
+     * Converts an axe-core rule violation into a concise string that humans—and
+     * future debugging sessions—can read.
+     */
+    protected static String formatViolation(final Rule rule) {
         var builder = new StringBuilder();
         var ruleId = Optional.ofNullable(rule.getId()).filter(s -> !s.isBlank()).orElse("rule");
         builder.append(ruleId);
@@ -207,7 +253,11 @@ class BfsgComplianceValidator {
         return builder.toString();
     }
 
-    private static List<String> safeNodes(final List<CheckedNode> nodes) {
+    /**
+     * Extracts node selectors from axe-core results while avoiding {@code null}
+     * explosions.
+     */
+    protected static List<String> safeNodes(final List<CheckedNode> nodes) {
         if (nodes == null || nodes.isEmpty()) {
             return List.of();
         }
@@ -224,7 +274,11 @@ class BfsgComplianceValidator {
         return selectorDescriptions;
     }
 
-    private static String formatTarget(final Object target) {
+    /**
+     * Serializes the target selector(s) for logging. Lists are concatenated,
+     * scalars are stringified as-is.
+     */
+    protected static String formatTarget(final Object target) {
         if (target == null) {
             return "";
         }
@@ -237,7 +291,10 @@ class BfsgComplianceValidator {
         return String.valueOf(target);
     }
 
-    private static String describe(final Throwable t) {
+    /**
+     * Builds a short, friendly description of the root cause for logging.
+     */
+    protected static String describe(final Throwable t) {
         if (t == null)
             return "Throwable: <null>";
 

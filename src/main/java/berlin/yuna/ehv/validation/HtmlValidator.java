@@ -1,8 +1,7 @@
-package org.nanonative.validation;
+package berlin.yuna.ehv.validation;
 
 import berlin.yuna.typemap.model.TypeMap;
-import org.nanonative.caniemail.CaniEmailFeatureDatabase;
-import org.nanonative.cli.EmailHtmlValidatorCli;
+import berlin.yuna.ehv.caniemail.CaniEmailFeatureDatabase;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -15,9 +14,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
-import static org.nanonative.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
 
+/**
+ * Weighs HTML features against the Can I Email dataset and keeps score. If
+ * something looks suspicious, this class tattles via TypeMap.
+ */
 public class HtmlValidator {
 
     public static final String FIELD_TOTAL = "totalFeatures";
@@ -34,6 +38,8 @@ public class HtmlValidator {
     public static final String FIELD_BFSG_ISSUE_COUNT = "bfsgIssueCount";
     public static final String BFSG_STATUS_ERROR = BfsgComplianceValidator.STATUS_ERROR;
     public static final String FIELD_PLAYWRIGHT_VERSION = "playwrightVersion";
+    public static final String FIELD_IGNORED_FEATURES = "ignoredFeatures";
+    public static final String FIELD_IGNORED_COUNT = "ignoredFeatureCount";
     public static final String LEVEL_ACCEPTED = "accepted";
     public static final String LEVEL_PARTIAL = "partial";
     public static final String LEVEL_REJECTED = "rejected";
@@ -45,8 +51,12 @@ public class HtmlValidator {
 
     private static final TypeMap FEATURE_LOOKUP = ValidatorHelper.buildLookup();
     public static final String WWW_CANIEMAIL_COM = "https://www.caniemail.com";
+    public static final List<String> DEFAULT_IGNORED_SLUGS = List.of("tag:html", "tag:head", "tag:body");
 
-    private HtmlValidator() {
+    /**
+     * Utility class – existence is optional, instantiation is forbidden.
+     */
+    protected HtmlValidator() {
     }
 
     public static TypeMap validate(final String html) {
@@ -144,7 +154,10 @@ public class HtmlValidator {
         return report;
     }
 
-    private static BigDecimal[] percentages(final BigDecimal[] totals, final long count) {
+    /**
+     * Computes accepted/partial/rejected ratios across all inspected features.
+     */
+    protected static BigDecimal[] percentages(final BigDecimal[] totals, final long count) {
         var denominator = BigDecimal.valueOf(count);
         return new BigDecimal[]{
                 percentage(totals[0], denominator),
@@ -153,7 +166,10 @@ public class HtmlValidator {
         };
     }
 
-    private static TypeMap evaluateFeature(final TypeMap entry) {
+    /**
+     * Converts a dataset feature entry into a simplified result with notes.
+     */
+    protected static TypeMap evaluateFeature(final TypeMap entry) {
         var result = new TypeMap();
         result.put(FIELD_STATUS, LEVEL_UNKNOWN);
         var counts = new TypeMap();
@@ -166,13 +182,16 @@ public class HtmlValidator {
         return result;
     }
 
-    private static void accumulate(final Map<?, ?> node, final TypeMap counts) {
+    /**
+     * Walks a nested stats structure and tallies acceptance levels.
+     */
+    protected static void accumulate(final Map<?, ?> node, final TypeMap counts) {
         for (Object value : node.values()) {
             accumulateNode(value, counts);
         }
     }
 
-    private static void accumulateNode(final Object node, final TypeMap counts) {
+    protected static void accumulateNode(final Object node, final TypeMap counts) {
         switch (node) {
             case Map<?, ?> map -> map.values().forEach(value -> accumulateNode(value, counts));
             case List<?> list -> list.forEach(value -> accumulateNode(value, counts));
@@ -180,7 +199,7 @@ public class HtmlValidator {
         }
     }
 
-    private static void accumulateValue(final Object value, final TypeMap counts) {
+    protected static void accumulateValue(final Object value, final TypeMap counts) {
         if (value == null) {
             return;
         }
@@ -196,12 +215,15 @@ public class HtmlValidator {
         }
     }
 
-    private static void increment(final TypeMap counts, final String key) {
+    protected static void increment(final TypeMap counts, final String key) {
         var current = counts.asLongOpt(key).orElse(0L);
         counts.put(key, current + 1);
     }
 
-    private static String classify(final TypeMap counts) {
+    /**
+     * Determines whether a feature is accepted, partial, rejected, or unknown.
+     */
+    protected static String classify(final TypeMap counts) {
         var full = counts.asLongOpt(LEVEL_ACCEPTED).orElse(0L);
         var partial = counts.asLongOpt(LEVEL_PARTIAL).orElse(0L);
         var none = counts.asLongOpt(LEVEL_REJECTED).orElse(0L);
@@ -214,7 +236,7 @@ public class HtmlValidator {
         return LEVEL_PARTIAL;
     }
 
-    private static List<String> collectNotes(final Map<?, ?> notesByNum) {
+    protected static List<String> collectNotes(final Map<?, ?> notesByNum) {
         if (notesByNum == null || notesByNum.isEmpty()) {
             return List.of();
         }
@@ -224,7 +246,10 @@ public class HtmlValidator {
                 .toList();
     }
 
-    private static Map<String, String> clientStatuses(final Map<?, ?> stats) {
+    /**
+     * Flattens the dataset matrix into platform:client -> status entries.
+     */
+    protected static Map<String, String> clientStatuses(final Map<?, ?> stats) {
         var statuses = new LinkedHashMap<String, String>();
         stats.forEach((clientName, payload) -> {
             if (payload instanceof Map<?, ?> platforms) {
@@ -236,13 +261,13 @@ public class HtmlValidator {
         return statuses;
     }
 
-    private static String classifyStats(final Object payload) {
+    protected static String classifyStats(final Object payload) {
         var counts = new TypeMap();
         accumulateNode(payload, counts);
         return classify(counts);
     }
 
-    private static BigDecimal percentage(final BigDecimal share, final BigDecimal denominator) {
+    protected static BigDecimal percentage(final BigDecimal share, final BigDecimal denominator) {
         if (denominator.compareTo(BigDecimal.ZERO) == 0) {
             return zero();
         }
@@ -251,11 +276,14 @@ public class HtmlValidator {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    private static BigDecimal zero() {
+    protected static BigDecimal zero() {
         return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     }
 
-    private static TypeMap fallbackEntry(final String feature) {
+    /**
+     * Provides synthetic entries for common plain HTML constructs.
+     */
+    protected static TypeMap fallbackEntry(final String feature) {
         return switch (feature) {
             case "attribute:style" -> syntheticEntry("html-inline-style", "Inline style attribute");
             case "attribute:class" -> syntheticEntry("html-class-attribute", "Class attribute");
@@ -264,15 +292,15 @@ public class HtmlValidator {
         };
     }
 
-    private static String formatClient(final String platform, final String client) {
+    protected static String formatClient(final String platform, final String client) {
         return sanitize(platform) + ":" + sanitize(client);
     }
 
-    private static String sanitize(final String value) {
+    protected static String sanitize(final String value) {
         return value == null ? "unknown" : value.toLowerCase(Locale.ROOT).replaceAll("\\s+", "-");
     }
 
-    private static TypeMap syntheticEntry(final String slug, final String title) {
+    protected static TypeMap syntheticEntry(final String slug, final String title) {
         var stats = new TypeMap();
         stats.put("synthetic", Map.of("global", Map.of("2024-01", "y")));
         var entry = new TypeMap();
@@ -280,5 +308,51 @@ public class HtmlValidator {
         entry.put("title", title);
         entry.put(FIELD_STATS, stats);
         return entry;
+    }
+
+    public static TypeMap ignoreSlugs(final TypeMap report, final List<String> slugs) {
+        if (report == null || slugs == null || slugs.isEmpty()) {
+            return report;
+        }
+        var normalized = slugs.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        if (normalized.isEmpty()) {
+            return report;
+        }
+        var ignored = new ArrayList<String>();
+        var unknown = report.asList(String.class, FIELD_UNKNOWN);
+        if (!unknown.isEmpty()) {
+            var filtered = unknown.stream()
+                    .map(value -> value == null ? "" : value)
+                    .filter(value -> {
+                        var matches = normalized.contains(value.toLowerCase(Locale.ROOT));
+                        if (matches) {
+                            ignored.add(value);
+                        }
+                        return !matches;
+                    })
+                    .toList();
+            report.put(FIELD_UNKNOWN, filtered);
+        }
+        var partialNotes = report.asMap(FIELD_PARTIAL_NOTES);
+        if (!partialNotes.isEmpty()) {
+            var keys = new ArrayList<>(partialNotes.keySet());
+            for (Object key : keys) {
+                var slug = String.valueOf(key);
+                if (normalized.contains(slug.toLowerCase(Locale.ROOT))) {
+                    ignored.add(slug);
+                    partialNotes.remove(key);
+                }
+            }
+        }
+        if (!ignored.isEmpty()) {
+            report.put(FIELD_IGNORED_FEATURES, List.copyOf(ignored));
+            report.put(FIELD_IGNORED_COUNT, ignored.size());
+        }
+        return report;
     }
 }

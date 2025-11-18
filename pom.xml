@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.nanonative</groupId>
+    <groupId>berlin.yuna</groupId>
     <artifactId>email-html-validator</artifactId>
-    <version>1.0.0</version>
+    <version>2025.11.3221648</version>
     <packaging>jar</packaging>
 
     <name>email-html-validator</name>
@@ -61,6 +61,7 @@
         <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
         <native-maven-plugin.version>0.11.3</native-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
+        <central-publishing-maven-plugin.version>0.9.0</central-publishing-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -244,7 +245,7 @@
                         <version>${native-maven-plugin.version}</version>
                         <configuration>
                             <imageName>${project.artifactId}.native</imageName>
-                            <mainClass>org.nanonative.cli.EmailHtmlValidatorCli</mainClass>
+                            <mainClass>berlin.yuna.ehv.cli.EmailHtmlValidatorCli</mainClass>
                             <buildArgs>
                                 <!-- Reduces the image size - Ensures the native image doesn't include the JVM as a fallback option -->
                                 <buildArg>--no-fallback</buildArg>
@@ -282,6 +283,51 @@
                                 <phase>package</phase>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>release</id>
+            <activation>
+                <property>
+                    <name>release</name>
+                    <value>true</value>
+                </property>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${central-publishing-maven-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <deploymentName>${project.groupId}:${project.artifactId}:${project.version}</deploymentName>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

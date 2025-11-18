@@ -11,6 +11,9 @@ inputs:
   bfsg_tags:
     description: "Comma-separated axe-core tags for the BFSG audit (e.g., wcag2aa,best-practice)"
     required: false
+  ignore_features:
+    description: "Comma-separated features to ignore (e.g., tag:html,tag:head)"
+    required: false
   help:
     description: "Show usage and exit"
     required: false
@@ -54,6 +57,7 @@ runs:
     EHV_OUTPUT_DIR: ${{ inputs.output_dir }}
     EHV_NO_BFSG: ${{ inputs.no_bfsg }}
     EHV_BFSG_TAGS: ${{ inputs.bfsg_tags }}
+    EHV_IGNORE_FEATURES: ${{ inputs.ignore_features }}
     EHV_HELP: ${{ inputs.help }}
     EHV_SUMMARY: ${{ inputs.github_summary }}
 
