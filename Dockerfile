@@ -22,8 +22,21 @@ FROM debian:stable-slim
 # Copy the fetched binary from the build stage
 COPY --from=fetcher /email-html-validator.native /usr/local/bin/email-html-validator.native
 
-# Ensure the binary is executable
-RUN chmod +x /usr/local/bin/email-html-validator.native
+########## SETUP PLAYWRIGHT DEPENDENCIES START ##########
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && PLAYWRIGHT_VERSION=$(/app.native --playwright-version | awk '{print $3}') \
+    && curl -fsSL "https://repo1.maven.org/maven2/com/microsoft/playwright/driver-bundle/${PLAYWRIGHT_VERSION}/driver-bundle-${PLAYWRIGHT_VERSION}.jar" -o driver-bundle.jar \
+    && unzip -q driver-bundle.jar "driver/linux$([ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ] && echo '-arm64')/*" -d /tmp/pw \
+    && mkdir -p ${PLAYWRIGHT_CLI_DIR} \
+    && mv /tmp/pw/driver/linux*/* ${PLAYWRIGHT_CLI_DIR}/ \
+    && ${PLAYWRIGHT_CLI_DIR}/node ${PLAYWRIGHT_CLI_DIR}/package/cli.js install chromium --only-shell --with-deps  \
+    && apt-get purge -y --auto-remove curl unzip \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* cp.txt playwright.jar driver.jar driver-bundle.jar /tmp/pw
+########## SETUP PLAYWRIGHT DEPENDENCIES END ##########
 
 # Default entrypoint
-ENTRYPOINT ["v.native"]
+ENTRYPOINT ["email-html-validator.native"]

@@ -1,7 +1,6 @@
 package org.nanonative.cli;
 
 import berlin.yuna.typemap.model.TypeMap;
-import org.nanonative.validation.HtmlValidator;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -16,12 +15,30 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import static org.nanonative.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
+import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_ISSUES;
+import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_ISSUE_COUNT;
+import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_STATUS;
+import static org.nanonative.validation.HtmlValidator.FIELD_CLIENT_COUNT;
+import static org.nanonative.validation.HtmlValidator.FIELD_FEATURE_COUNT;
+import static org.nanonative.validation.HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT;
+import static org.nanonative.validation.HtmlValidator.FIELD_PARTIAL_CLIENTS;
+import static org.nanonative.validation.HtmlValidator.FIELD_PARTIAL_NOTES;
+import static org.nanonative.validation.HtmlValidator.FIELD_REFERENCE_URL;
+import static org.nanonative.validation.HtmlValidator.FIELD_REJECTED_CLIENTS;
+import static org.nanonative.validation.HtmlValidator.FIELD_TOTAL;
+import static org.nanonative.validation.HtmlValidator.FIELD_UNKNOWN;
+import static org.nanonative.validation.HtmlValidator.LEVEL_ACCEPTED;
+import static org.nanonative.validation.HtmlValidator.LEVEL_PARTIAL;
+import static org.nanonative.validation.HtmlValidator.LEVEL_REJECTED;
+import static org.nanonative.validation.HtmlValidator.WWW_CANIEMAIL_COM;
+
 public class ReportExporter {
 
     private static final List<String> LEVELS = List.of(
-            HtmlValidator.LEVEL_ACCEPTED,
-            HtmlValidator.LEVEL_PARTIAL,
-            HtmlValidator.LEVEL_REJECTED
+            LEVEL_ACCEPTED,
+            LEVEL_PARTIAL,
+            LEVEL_REJECTED
     );
     private static final String NL = System.lineSeparator();
 
@@ -32,11 +49,11 @@ public class ReportExporter {
     }
 
     public static void printConsole(final TypeMap report, final PrintStream out) {
-        var total = report.asLongOpt(HtmlValidator.FIELD_TOTAL).orElse(0L);
-        var featureCount = report.asLongOpt(HtmlValidator.FIELD_FEATURE_COUNT).orElse(0L);
-        var clientCount = report.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT).orElse(0L);
-        var osCount = report.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT).orElse(0L);
-        var reference = report.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL).orElse("https://www.caniemail.com");
+        var total = report.asLongOpt(FIELD_TOTAL).orElse(0L);
+        var featureCount = report.asLongOpt(FIELD_FEATURE_COUNT).orElse(0L);
+        var clientCount = report.asLongOpt(FIELD_CLIENT_COUNT).orElse(0L);
+        var osCount = report.asLongOpt(FIELD_OPERATING_SYSTEM_COUNT).orElse(0L);
+        var reference = report.asStringOpt(FIELD_REFERENCE_URL).orElse(WWW_CANIEMAIL_COM);
         out.printf(Locale.ROOT, "Features evaluated: %d%n", total);
 
         for (var level : LEVELS) {
@@ -44,7 +61,7 @@ public class ReportExporter {
             out.printf(Locale.ROOT, "  - %s: %s%%%n", level, percentage.toPlainString());
         }
 
-        var notes = report.asMap(HtmlValidator.FIELD_PARTIAL_NOTES);
+        var notes = report.asMap(FIELD_PARTIAL_NOTES);
         out.println("Findings:");
         if (notes.isEmpty()) {
             out.println("  (none)");
@@ -57,11 +74,11 @@ public class ReportExporter {
                     .sorted(Map.Entry.comparingByKey())
                     .forEach(entry -> {
                         var suffix = entry.getValue().isEmpty() ? "" : " (" + String.join("; ", entry.getValue()) + ")";
-                        out.printf(Locale.ROOT, "  * %s -> %s%s%n", entry.getKey(), HtmlValidator.LEVEL_PARTIAL, suffix);
+                        out.printf(Locale.ROOT, "  * %s -> %s%s%n", entry.getKey(), LEVEL_PARTIAL, suffix);
                     });
         }
 
-        var unknown = report.asList(String.class, HtmlValidator.FIELD_UNKNOWN).stream()
+        var unknown = report.asList(String.class, FIELD_UNKNOWN).stream()
                 .sorted()
                 .toList();
         if (!unknown.isEmpty()) {
@@ -69,25 +86,26 @@ public class ReportExporter {
             unknown.forEach(feature -> out.println("  * " + feature));
         }
 
-        var partialClients = report.asList(String.class, HtmlValidator.FIELD_PARTIAL_CLIENTS);
+        var partialClients = report.asList(String.class, FIELD_PARTIAL_CLIENTS);
         if (!partialClients.isEmpty()) {
             out.println("Partial clients:");
             partialClients.forEach(client -> out.println("  * " + client));
         }
-        var rejectedClients = report.asList(String.class, HtmlValidator.FIELD_REJECTED_CLIENTS);
+        var rejectedClients = report.asList(String.class, FIELD_REJECTED_CLIENTS);
         if (!rejectedClients.isEmpty()) {
             out.println("Rejected clients:");
             rejectedClients.forEach(client -> out.println("  * " + client));
         }
-        report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS).ifPresent(status -> {
-            long issueCount = report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).orElse(0L);
+        report.asStringOpt(FIELD_BFSG_STATUS).ifPresent(status -> {
+            long issueCount = report.asLongOpt(FIELD_BFSG_ISSUE_COUNT).orElse(0L);
             out.printf(Locale.ROOT, "BFSG compliance: %s (%d issues)%n", status, issueCount);
-            var issues = report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES);
+            var issues = report.asList(String.class, FIELD_BFSG_ISSUES);
             if (!issues.isEmpty()) {
                 issues.forEach(issue -> out.println("  - " + issue));
             }
         });
         out.printf(Locale.ROOT, "Dataset: %d features, %d clients, %d operating systems%n", featureCount, clientCount, osCount);
+        out.println("Playwright version: " + PLAYWRIGHT_VERSION);
         out.println("Reference: " + reference);
     }
 
@@ -133,17 +151,17 @@ public class ReportExporter {
     }
 
     private String toHtml(final TypeMap report) {
-        var partialNotes = report.asMap(HtmlValidator.FIELD_PARTIAL_NOTES);
-        var unknown = report.asList(String.class, HtmlValidator.FIELD_UNKNOWN);
-        var partialClients = report.asList(String.class, HtmlValidator.FIELD_PARTIAL_CLIENTS);
-        var rejectedClients = report.asList(String.class, HtmlValidator.FIELD_REJECTED_CLIENTS);
-        var bfsgStatus = report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS);
-        var bfsgIssues = report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES);
-        var bfsgIssueCount = report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).orElse(0L);
-        var featureCount = report.asLongOpt(HtmlValidator.FIELD_FEATURE_COUNT).orElse(0L);
-        var clientCount = report.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT).orElse(0L);
-        var osCount = report.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT).orElse(0L);
-        var reference = report.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL).orElse("https://www.caniemail.com");
+        var partialNotes = report.asMap(FIELD_PARTIAL_NOTES);
+        var unknown = report.asList(String.class, FIELD_UNKNOWN);
+        var partialClients = report.asList(String.class, FIELD_PARTIAL_CLIENTS);
+        var rejectedClients = report.asList(String.class, FIELD_REJECTED_CLIENTS);
+        var bfsgStatus = report.asStringOpt(FIELD_BFSG_STATUS);
+        var bfsgIssues = report.asList(String.class, FIELD_BFSG_ISSUES);
+        var bfsgIssueCount = report.asLongOpt(FIELD_BFSG_ISSUE_COUNT).orElse(0L);
+        var featureCount = report.asLongOpt(FIELD_FEATURE_COUNT).orElse(0L);
+        var clientCount = report.asLongOpt(FIELD_CLIENT_COUNT).orElse(0L);
+        var osCount = report.asLongOpt(FIELD_OPERATING_SYSTEM_COUNT).orElse(0L);
+        var reference = report.asStringOpt(FIELD_REFERENCE_URL).orElse(WWW_CANIEMAIL_COM);
         var builder = new StringBuilder();
         builder.append("<!doctype html>").append(NL)
                 .append("<html lang=\"en\">").append(NL)
@@ -166,7 +184,7 @@ public class ReportExporter {
                 .append("</head>").append(NL)
                 .append("<body>").append(NL)
                 .append("<header><h1>Email HTML Validator Report</h1><p>Features evaluated: ")
-                .append(report.asLongOpt(HtmlValidator.FIELD_TOTAL).orElse(0L))
+                .append(report.asLongOpt(FIELD_TOTAL).orElse(0L))
                 .append("</p></header>").append(NL)
                 .append("<div class=\"container\">").append(NL);
 
@@ -228,9 +246,9 @@ public class ReportExporter {
         if (rejectedClients.isEmpty()) {
             builder.append("<p>(none)</p>").append(NL);
         } else {
-                builder.append("<div>").append(NL);
-                rejectedClients.forEach(client -> builder.append("<span class=\"chip\">").append(escapeHtml(client)).append("</span>").append(NL));
-                builder.append("</div>").append(NL);
+            builder.append("<div>").append(NL);
+            rejectedClients.forEach(client -> builder.append("<span class=\"chip\">").append(escapeHtml(client)).append("</span>").append(NL));
+            builder.append("</div>").append(NL);
         }
         builder.append("</section>").append(NL);
 
@@ -252,6 +270,7 @@ public class ReportExporter {
                 .append("<p>Total features known: ").append(featureCount).append("</p>")
                 .append("<p>Total clients known: ").append(clientCount).append("</p>")
                 .append("<p>Total operating systems: ").append(osCount).append("</p>")
+                .append("<p>Playwright version: ").append(PLAYWRIGHT_VERSION).append("</p>")
                 .append("<p>Reference: <a href=\"").append(reference).append("\" target=\"_blank\" rel=\"noopener noreferrer\">")
                 .append(reference).append("</a></p></section>")
                 .append(NL);
@@ -263,16 +282,16 @@ public class ReportExporter {
     }
 
     private String toMarkdown(final TypeMap report) {
-        var partialNotes = report.asMap(HtmlValidator.FIELD_PARTIAL_NOTES);
-        var unknown = report.asList(String.class, HtmlValidator.FIELD_UNKNOWN);
-        var partialClients = report.asList(String.class, HtmlValidator.FIELD_PARTIAL_CLIENTS);
-        var rejectedClients = report.asList(String.class, HtmlValidator.FIELD_REJECTED_CLIENTS);
-        var bfsgStatus = report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS);
-        var bfsgIssues = report.asList(String.class, HtmlValidator.FIELD_BFSG_ISSUES);
-        var bfsgIssueCount = report.asLongOpt(HtmlValidator.FIELD_BFSG_ISSUE_COUNT).orElse(0L);
+        var partialNotes = report.asMap(FIELD_PARTIAL_NOTES);
+        var unknown = report.asList(String.class, FIELD_UNKNOWN);
+        var partialClients = report.asList(String.class, FIELD_PARTIAL_CLIENTS);
+        var rejectedClients = report.asList(String.class, FIELD_REJECTED_CLIENTS);
+        var bfsgStatus = report.asStringOpt(FIELD_BFSG_STATUS);
+        var bfsgIssues = report.asList(String.class, FIELD_BFSG_ISSUES);
+        var bfsgIssueCount = report.asLongOpt(FIELD_BFSG_ISSUE_COUNT).orElse(0L);
         var builder = new StringBuilder();
         builder.append("# Email HTML Validator Report").append(NL).append(NL);
-        builder.append("- Features evaluated: ").append(report.asLongOpt(HtmlValidator.FIELD_TOTAL).orElse(0L)).append(NL).append(NL);
+        builder.append("- Features evaluated: ").append(report.asLongOpt(FIELD_TOTAL).orElse(0L)).append(NL).append(NL);
 
         builder.append("## Summary").append(NL);
         for (var level : LEVELS) {
@@ -336,10 +355,11 @@ public class ReportExporter {
             }
         });
         builder.append(NL).append("## Dataset").append(NL);
-        builder.append("- Features known: ").append(report.asLongOpt(HtmlValidator.FIELD_FEATURE_COUNT).orElse(0L)).append(NL);
-        builder.append("- Clients known: ").append(report.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT).orElse(0L)).append(NL);
-        builder.append("- Operating systems: ").append(report.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT).orElse(0L)).append(NL);
-        builder.append("- Reference: ").append(report.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL).orElse("https://www.caniemail.com")).append(NL);
+        builder.append("- Features known: ").append(report.asLongOpt(FIELD_FEATURE_COUNT).orElse(0L)).append(NL);
+        builder.append("- Clients known: ").append(report.asLongOpt(FIELD_CLIENT_COUNT).orElse(0L)).append(NL);
+        builder.append("- Operating systems: ").append(report.asLongOpt(FIELD_OPERATING_SYSTEM_COUNT).orElse(0L)).append(NL);
+        builder.append("- Playwright version: ").append(PLAYWRIGHT_VERSION).append(NL);
+        builder.append("- Reference: ").append(report.asStringOpt(FIELD_REFERENCE_URL).orElse(WWW_CANIEMAIL_COM)).append(NL);
         return builder.toString();
     }
 

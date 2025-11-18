@@ -14,6 +14,9 @@ inputs:
   help:
     description: "Show usage and exit"
     required: false
+  source:
+    description: "HTML source to validate (inline string, file path, URL, or '-' for stdin)"
+    required: true
   github_summary:
     description: "Append the Markdown report to the GitHub Action summary"
     required: false
@@ -45,7 +48,9 @@ outputs:
 runs:
   using: "docker"
   image: "docker://ghcr.io/yunabraska/api-doc-crafter:latest"
-env:
+  args:
+    - ${{ inputs.source }}
+  env:
     EHV_OUTPUT_DIR: ${{ inputs.output_dir }}
     EHV_NO_BFSG: ${{ inputs.no_bfsg }}
     EHV_BFSG_TAGS: ${{ inputs.bfsg_tags }}

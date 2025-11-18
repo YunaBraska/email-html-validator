@@ -14,6 +14,8 @@ import com.microsoft.playwright.options.WaitUntilState;
 import java.net.URI;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -23,17 +25,24 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class BfsgComplianceValidator {
 
     private static final boolean NATIVE_IMAGE = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
     private static final AtomicBoolean RESOURCE_FS_READY = new AtomicBoolean(false);
+    private static final AtomicBoolean PLAYWRIGHT_CLI_READY = new AtomicBoolean(false);
     private static final Set<String> FRAGMENT_DOCUMENT_RULES = Set.of(
             "document-title",
             "html-has-lang",
             "landmark-one-main",
             "page-has-heading-one"
     );
+    private static final String PLAYWRIGHT_CLI_PROPERTY = "playwright.cli.dir";
+    private static final String ENV_PLAYWRIGHT_CLI_DIR = "PLAYWRIGHT_CLI_DIR";
+    private static final String ENV_EHV_PLAYWRIGHT_CLI_DIR = "EHV_PLAYWRIGHT_CLI_DIR";
+    public static final String STATUS_ERROR = "error";
+    public static final String STATUS_PASS = "pass";
 
     private BfsgComplianceValidator() {
     }
@@ -44,11 +53,12 @@ class BfsgComplianceValidator {
 
     static BfsgResult evaluate(final String html, final List<String> tags) {
         if (html == null || html.isBlank()) {
-            return new BfsgResult("pass", List.of());
+            return new BfsgResult(STATUS_PASS, List.of());
         }
+        configurePlaywrightCliDir();
         var fsError = mountNativeResourceFileSystem();
         if (fsError.isPresent()) {
-            return new BfsgResult("error", List.of(fsError.get()));
+            return new BfsgResult(STATUS_ERROR, List.of(fsError.get()));
         }
         var htmlIsFragment = isHtmlFragment(html);
         var bfsgTags = normalizeTags(tags);
@@ -63,39 +73,39 @@ class BfsgComplianceValidator {
                 }
                 AxeResults results = builder.analyze();
                 if (results == null) {
-                    return new BfsgResult("error", List.of("axe-core returned no result"));
+                    return new BfsgResult(STATUS_ERROR, List.of("axe-core returned no result"));
                 }
                 var violations = Optional.ofNullable(results.getViolations()).orElse(List.of());
                 var issues = violations.stream()
                         .filter(rule -> !shouldIgnoreRule(rule, htmlIsFragment))
                         .map(BfsgComplianceValidator::formatViolation)
                         .toList();
-                return new BfsgResult(issues.isEmpty() ? "pass" : "fail", issues);
+                return new BfsgResult(issues.isEmpty() ? STATUS_PASS : "fail", issues);
             }
         } catch (Exception exception) {
-            return new BfsgResult("error", List.of("axe-core failure: " + describe(exception)));
+            if (playwrightCliUnavailable(exception)) {
+                return new BfsgResult(STATUS_ERROR, List.of("Playwright CLI not available. Set PLAYWRIGHT_CLI_DIR (or EHV_PLAYWRIGHT_CLI_DIR) to an installed driver directory."));
+            }
+            return new BfsgResult(STATUS_ERROR, List.of("axe-core failure: " + describe(exception)));
         }
     }
 
     private static boolean shouldIgnoreRule(final Rule rule, final boolean htmlIsFragment) {
-        if (!htmlIsFragment || rule == null) {
+        if (!htmlIsFragment || rule == null)
             return false;
-        }
-        var ruleId = Optional.ofNullable(rule.getId())
+        return FRAGMENT_DOCUMENT_RULES.contains(Optional.ofNullable(rule.getId())
                 .map(value -> value.toLowerCase(Locale.ROOT))
-                .orElse("");
-        return FRAGMENT_DOCUMENT_RULES.contains(ruleId);
+                .orElse(""));
     }
 
     private static boolean isHtmlFragment(final String html) {
-        return html == null
-                || !html.toLowerCase(Locale.ROOT).contains("<html");
+        return html == null || !html.toLowerCase(Locale.ROOT).contains("<html");
     }
 
     private static List<String> normalizeTags(final List<String> tags) {
-        if (tags == null || tags.isEmpty()) {
+        if (tags == null || tags.isEmpty())
             return List.of();
-        }
+
         var unique = new ArrayList<String>();
         for (String tag : tags) {
             if (tag == null) {
@@ -111,6 +121,51 @@ class BfsgComplianceValidator {
             }
         }
         return unique.isEmpty() ? List.of() : List.copyOf(unique);
+    }
+
+    private static void configurePlaywrightCliDir() {
+        if (PLAYWRIGHT_CLI_READY.get()) {
+            return;
+        }
+        synchronized (PLAYWRIGHT_CLI_READY) {
+            if (PLAYWRIGHT_CLI_READY.get()) {
+                return;
+            }
+            var existing = System.getProperty(PLAYWRIGHT_CLI_PROPERTY);
+            if (existing != null && !existing.isBlank()) {
+                PLAYWRIGHT_CLI_READY.set(true);
+                return;
+            }
+            resolvePlaywrightCliDir()
+                    .map(Path::toAbsolutePath)
+                    .map(Path::toString)
+                    .ifPresent(value -> System.setProperty(PLAYWRIGHT_CLI_PROPERTY, value));
+            PLAYWRIGHT_CLI_READY.set(true);
+        }
+    }
+
+    private static Optional<Path> resolvePlaywrightCliDir() {
+        return Stream.of(ENV_PLAYWRIGHT_CLI_DIR, ENV_EHV_PLAYWRIGHT_CLI_DIR)
+                .map(System::getenv)
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .map(Path::of)
+                .filter(Files::isDirectory)
+                .findFirst();
+    }
+
+    private static boolean playwrightCliUnavailable(final Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof ClassNotFoundException missing
+                    && Optional.ofNullable(missing.getMessage())
+                    .map(message -> message.contains("DriverJar"))
+                    .orElse(false)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private static Optional<String> mountNativeResourceFileSystem() {
@@ -182,15 +237,39 @@ class BfsgComplianceValidator {
         return String.valueOf(target);
     }
 
-    private static String describe(final Throwable throwable) {
-        var messages = new ArrayList<String>();
-        Throwable current = throwable;
-        while (current != null) {
-            var message = current.getClass().getSimpleName() + ": " + Optional.ofNullable(current.getMessage()).orElse("");
-            messages.add(message.trim());
-            current = current.getCause();
+    private static String describe(final Throwable t) {
+        if (t == null)
+            return "Throwable: <null>";
+
+        final List<String> out = new ArrayList<>();
+        Throwable x = t;
+
+        while (x != null) {
+            final StringBuilder sb = new StringBuilder(48);
+
+            sb.append(x.getClass().getSimpleName());
+
+            final String msg = x.getMessage();
+            if (msg != null && !msg.isBlank()) {
+                sb.append(": ").append(msg.trim());
+            }
+
+            final StackTraceElement[] st = x.getStackTrace();
+            if (st.length > 0) {
+                final StackTraceElement e = st[0];
+                sb.append(" @ ")
+                        .append(e.getClassName())
+                        .append('.')
+                        .append(e.getMethodName())
+                        .append(':')
+                        .append(e.getLineNumber());
+            }
+
+            out.add(sb.toString());
+            x = x.getCause();
         }
-        return String.join(" -> ", messages);
+
+        return String.join(" -> ", out);
     }
 
     record BfsgResult(String status, List<String> issues) {

@@ -9,6 +9,16 @@ CLI wiring, validation flow, and dataset plumbing reside under `src/main/java/or
 - `mvn test` — executes `EmailHtmlValidatorCliBlackBoxTest`, which spins up per-test temp folders, asserts console output, and inspects JSON/HTML/Markdown/XML artifacts.
 - `mvn -q -DskipTests -Pnative clean package` — build the GraalVM binary (`target/email-html-validator.native`); ensure GraalVM 21+ plus `native-image` is installed.
 - Set `PLAYWRIGHT_BROWSERS_PATH` so BFSG downloads happen once in CI; otherwise Playwright populates `~/.cache/ms-playwright`.
+- Playwright’s Chromium runtime needs system libraries on Linux. Install them via the [official dependency guide](https://playwright.dev/java/docs/ci#linux-dependencies) or run:
+  ```
+  sudo apt-get update && sudo apt-get install -y \
+    libgtk-3-0 libgtk-4-1 libgraphene-1.0-0 libwoff1 libevent-2.1-7 libopus0 \
+    libgstreamer1.0-0 libgstreamer-gl1.0-0 libgstreamer-plugins-base1.0-0 \
+    gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav \
+    libflite1 libharfbuzz-icu0 libsecret-1-0 libhyphen0 libmanette-0.2-0 \
+    libgles2 libx264-164 libavif16 libvpx9
+  ```
+  (The released Docker action image already includes these libraries.) When BFSG must be disabled (e.g., custom CI images), pass `--no-bfsg`/`EHV_NO_BFSG=true`. Dataset regeneration requires the upstream markdown files in `src/test/resources/caniemail/_features`; clone https://github.com/maizzle/caniemail when you need to refresh them.
 
 ## Coding Style & Naming Conventions
 Java 21, 4-space indent, and functional composition over inheritance. Favor `TypeMap` for report payloads, avoid `null` returns, and keep helpers static and side-effect free. Tokens use `type:value` (e.g., `tag:body`, `css:at-media`). Introduce new CLI options via constants in `EmailHtmlValidatorCli` and document them in `README.md`.

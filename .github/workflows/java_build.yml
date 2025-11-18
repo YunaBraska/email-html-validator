@@ -72,6 +72,7 @@ jobs:
           if [ "${{ steps.java_info.outputs.builder_name }}" != "Gradle" ]; then
             ${{ steps.java_info.outputs.cmd_update_props }}
             ${{ steps.java_info.outputs.cmd_update_parent }}
+            ${{ steps.java_info.outputs.cmd }} -Dsync.playwright=true -Dtest=org.nanonative.cli.PlaywrightVersionAlignmentTest test
           fi
           git config --global user.name 'Kira Bot'
           git config --global user.email 'kira@noreply.github.com'

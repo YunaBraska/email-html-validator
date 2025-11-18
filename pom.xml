@@ -44,7 +44,7 @@
         <jsoup.version>1.17.2</jsoup.version>
         <typemap.version>2025.09.2660710</typemap.version>
         <axe-core.version>4.11.0</axe-core.version>
-        <playwright.version>1.44.0</playwright.version>
+        <playwright.bundle.scope>compile</playwright.bundle.scope>
 
         <!-- Test deps -->
         <junit.version>6.0.0</junit.version>
@@ -55,7 +55,12 @@
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+        <maven-scm-plugin.version>1.11.2</maven-scm-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
         <native-maven-plugin.version>0.10.2</native-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -77,7 +82,7 @@
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
-            <version>${playwright.version}</version>
+            <version>1.55.0</version>
         </dependency>
 
         <!-- Test -->
@@ -101,8 +106,19 @@
         </dependency>
     </dependencies>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.microsoft.playwright</groupId>
+                <artifactId>driver-bundle</artifactId>
+                <version>1.55.0</version>
+                <scope>${playwright.bundle.scope}</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
-        <finalName>${project.artifactId}</finalName>
+        <finalName>${project.name}-no-dependencies</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -112,30 +128,104 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <release>${java.version}</release>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                    </compilerArgs>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>${maven-assembly-plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>berlin.yuna.apidoccrafter.App</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>${project.name}</finalName>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <appendAssemblyId>false</appendAssemblyId>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
-                    <useModulePath>false</useModulePath>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven-jar-plugin.version}</version>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
                 <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>org.nanonative.cli.EmailHtmlValidatorCli</mainClass>
-                        </manifest>
-                    </archive>
+                    <excludes>
+                        <!--
+                        *   Match zero or more characters
+                        **  Match zero or more directories
+                        ?   Match a single character
+                        -->
+                        <!--                        <exclude>**/*/config/**/*</exclude>-->
+                        <!--                        <exclude>**/*/model/**/*</exclude>-->
+                        <!--                        <exclude>**/*/domain/**/*</exclude>-->
+                        <exclude>**/*/persistence/**/*</exclude>
+                        <exclude>**/*/target/**/*</exclude>
+                    </excludes>
                 </configuration>
+                <executions>
+                    <execution> <!-- 1 -->
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                        <configuration>
+                            <destFile>${project.build.directory}/jacoco-ut.exec</destFile>
+                        </configuration>
+                    </execution>
+                    <execution> <!-- 2 -->
+                        <id>pre-integration-prepare</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                    </execution>
+                    <execution> <!-- 3 -->
+                        <id>report</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>merge</goal>
+                        </goals>
+                        <configuration>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${project.build.directory}</directory>
+                                    <includes>
+                                        <include>*.exec</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                        </configuration>
+                    </execution>
+                    <execution> <!-- 4 -->
+                        <id>merged-report-generation</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -143,6 +233,9 @@
     <profiles>
         <profile>
             <id>native</id>
+            <properties>
+                <playwright.bundle.scope>provided</playwright.bundle.scope>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -153,20 +246,40 @@
                             <imageName>${project.artifactId}.native</imageName>
                             <mainClass>org.nanonative.cli.EmailHtmlValidatorCli</mainClass>
                             <buildArgs>
+                                <!-- Reduces the image size - Ensures the native image doesn't include the JVM as a fallback option -->
                                 <buildArg>--no-fallback</buildArg>
-                                <buildArg>--install-exit-handlers</buildArg>
-                                <buildArg>--report-unsupported-elements-at-runtime</buildArg>
+                                <!-- Disables the use of the GraalVM compilation server -->
+                                <buildArg>--no-server</buildArg>
+                                <!-- Improve startup time - Initialize classes at build time rather than at runtime -->
                                 <buildArg>--initialize-at-build-time</buildArg>
-                                <buildArg>--initialize-at-build-time=jdk.internal.net.http.HttpClientFacade</buildArg>
-                                <buildArg>--initialize-at-build-time=jdk.internal.net.http.HttpClientImpl</buildArg>
+                                <!-- Aggressively remove unused code -->
+                                <buildArg>--allow-incomplete-classpath</buildArg>
+                                <!-- Install exit handlers to properly handle app termination -->
+                                <buildArg>--install-exit-handlers</buildArg>
+                                <!-- Report unsupported elements at runtime not at build time -->
+                                <buildArg>--report-unsupported-elements-at-runtime</buildArg>
+                                <!-- epsilon = if you don’t want garbage collection at all -->
+                                <!-- serial = if you need basic garbage collection -->
+                                <!-- Default Serial garbage collector -->
+                                <buildArg>--gc=serial</buildArg>
+                                <!-- compatibility = for best compatibility-->
+                                <!-- native = for best performance for machine with the same CPU features -->
+                                <!-- Defaults to x86-64-v3 on AMD64 and armv8-a on AArch64 -->
+                                <!-- <buildArg>-march=native</buildArg>-->
                             </buildArgs>
+                            <resourceIncludedPatterns>
+                                <!-- Resource folder to include -->
+                                <resourceIncludedPattern>.*bin.static.*</resourceIncludedPattern>
+                            </resourceIncludedPatterns>
                         </configuration>
                         <executions>
                             <execution>
-                                <phase>package</phase>
                                 <goals>
+                                    <!-- Needed for including resources -->
+                                    <goal>generateResourceConfig</goal>
                                     <goal>compile-no-fork</goal>
                                 </goals>
+                                <phase>package</phase>
                             </execution>
                         </executions>
                     </plugin>

@@ -1,6 +1,7 @@
 package org.nanonative.cli;
 
 import berlin.yuna.typemap.model.TypeMap;
+import com.microsoft.playwright.Playwright;
 import org.nanonative.validation.HtmlValidator;
 
 import java.io.IOException;
@@ -17,16 +18,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
 
 public class EmailHtmlValidatorCli {
 
-    private static final String OPTION_HELP = "help";
-    private static final String OPTION_SOURCE = "source";
-    private static final String OPTION_OUTPUT = "outputDir";
-    private static final String OPTION_BFSG = "bfsg";
-    private static final String OPTION_BFSG_TAGS = "bfsgTags";
-    private static final String OPTION_RICK_ROLL = "rickRoll";
-    private static final String OPTION_SUMMARY = "githubSummary";
+    public static final String OPTION_HELP = "--help";
+    public static final String OPTION_SOURCE = "source";
+    public static final String OPTION_OUTPUT = "--output-dir";
+    public static final String OPTION_BFSG = "--bfsg";
+    public static final String OPTION_BFSG_TAGS = "--bfsg-tags";
+    public static final String OPTION_RICK_ROLL = "rick=";
+    public static final String OPTION_SUMMARY = "--github-summary";
+    public static final String OPTION_PLAYWRIGHT_VERSION = "--playwright-version";
+    public static final String PLAYWRIGHT_VERSION = resolvePlaywrightVersion();
     private static final String DEFAULT_OUTPUT_DIR = "reports";
     private static final String ENV_PREFIX = "EHV_";
     private static final String ENV_HELP = ENV_PREFIX + "HELP";
@@ -61,6 +66,10 @@ public class EmailHtmlValidatorCli {
                 printUsage(out);
                 return 0;
             }
+            if (Boolean.TRUE.equals(options.asBooleanOpt(OPTION_PLAYWRIGHT_VERSION).orElse(false))) {
+                out.println("Playwright version: " + PLAYWRIGHT_VERSION);
+                return 0;
+            }
 
             var source = options.asStringOpt(OPTION_SOURCE)
                 .orElseThrow(() -> new IllegalArgumentException("Missing HTML source. Provide inline HTML, '-', file path, or URL."));
@@ -72,6 +81,7 @@ public class EmailHtmlValidatorCli {
             boolean unicornMode = isUnicornMode(rawTags);
             var bfsgTags = unicornMode ? List.<String>of() : rawTags;
             TypeMap report = HtmlValidator.validate(html, runBfsg, bfsgTags);
+            report.put(HtmlValidator.FIELD_PLAYWRIGHT_VERSION, PLAYWRIGHT_VERSION);
             if (unicornMode) {
                 out.println("🦄 Weighted coverage certified by Unicorn Labs.");
             }
@@ -82,15 +92,15 @@ public class EmailHtmlValidatorCli {
             ReportExporter.printConsole(report, out);
 
             var outputPath = options.asStringOpt(OPTION_OUTPUT)
-                    .filter(path -> !path.isBlank())
-                    .map(Path::of)
-                    .orElse(Path.of(DEFAULT_OUTPUT_DIR));
+                .filter(path -> !path.isBlank())
+                .map(Path::of)
+                .orElse(Path.of(DEFAULT_OUTPUT_DIR));
             new ReportExporter(outputPath).export(report);
             writeGithubOutputs(report, outputPath, environment);
             if (Boolean.TRUE.equals(options.asBooleanOpt(OPTION_SUMMARY).orElse(false))) {
                 writeGithubSummary(outputPath, environment);
             }
-            return 0;
+            return exitCodeForReport(report);
         } catch (IllegalArgumentException exception) {
             err.println("Input error: " + exception.getMessage());
             return 1;
@@ -105,11 +115,12 @@ public class EmailHtmlValidatorCli {
     }
 
     static TypeMap parseOptions(final String[] args, final Map<String, String> environment) {
-        var options = new TypeMap();
-        options.put(OPTION_HELP, false);
-        options.put(OPTION_BFSG, true);
-        options.put(OPTION_RICK_ROLL, false);
-        options.put(OPTION_SUMMARY, false);
+        var options = new TypeMap()
+            .putR(OPTION_HELP, false)
+            .putR(OPTION_BFSG, true)
+            .putR(OPTION_RICK_ROLL, false)
+            .putR(OPTION_SUMMARY, false)
+            .putR(OPTION_PLAYWRIGHT_VERSION, false);
         applyEnvironment(options, environment);
         var builder = new StringBuilder();
         if (args != null) {
@@ -118,43 +129,48 @@ public class EmailHtmlValidatorCli {
                 if (arg == null) {
                     continue;
                 }
-                if ("-h".equals(arg) || "--help".equals(arg)) {
-                    options.put(OPTION_HELP, true);
-                    continue;
-                }
-                if ("-o".equals(arg) || "--output-dir".equals(arg)) {
-                    if (index + 1 >= args.length) {
-                        throw new IllegalArgumentException("Missing path for " + arg);
+                switch (arg) {
+                    case "-h", OPTION_HELP -> {
+                        options.put(OPTION_HELP, true);
+                        continue;
                     }
-                    var dir = args[++index];
-                    if (dir == null || dir.isBlank()) {
-                        throw new IllegalArgumentException("Output directory cannot be blank");
+                    case OPTION_PLAYWRIGHT_VERSION -> {
+                        options.put(OPTION_PLAYWRIGHT_VERSION, true);
+                        continue;
                     }
-                    options.put(OPTION_OUTPUT, dir);
-                    continue;
-                }
-                if ("--bfsg".equals(arg) || "--check-bfsg".equals(arg)) {
-                    options.put(OPTION_BFSG, true);
-                    continue;
-                }
-                if ("--no-bfsg".equals(arg) || "--skip-bfsg".equals(arg)) {
-                    options.put(OPTION_BFSG, false);
-                    continue;
-                }
-                if ("--bfsg-tags".equals(arg)) {
-                    if (index + 1 >= args.length) {
-                        throw new IllegalArgumentException("Missing tag list for " + arg);
+                    case "-o", OPTION_OUTPUT -> {
+                        if (index + 1 >= args.length) {
+                            throw new IllegalArgumentException("Missing path for " + arg);
+                        }
+                        var dir = args[++index];
+                        if (dir == null || dir.isBlank()) {
+                            throw new IllegalArgumentException("Output directory cannot be blank");
+                        }
+                        options.put(OPTION_OUTPUT, dir);
+                        continue;
                     }
-                    var tagArg = args[++index];
-                    options.put(OPTION_BFSG_TAGS, parseBfsgTags(tagArg));
-                    continue;
-                }
-                if ("--github-summary".equals(arg)) {
-                    options.put(OPTION_SUMMARY, true);
-                    continue;
+                    case OPTION_BFSG -> {
+                        options.put(OPTION_BFSG, true);
+                        continue;
+                    }
+                    case "--no-bfsg" -> {
+                        options.put(OPTION_BFSG, false);
+                        continue;
+                    }
+                    case OPTION_BFSG_TAGS -> {
+                        if (index + 1 >= args.length)
+                            throw new IllegalArgumentException("Missing tag list for " + arg);
+                        var tagArg = args[++index];
+                        options.put(OPTION_BFSG_TAGS, parseBfsgTags(tagArg));
+                        continue;
+                    }
+                    case OPTION_SUMMARY -> {
+                        options.put(OPTION_SUMMARY, true);
+                        continue;
+                    }
                 }
                 var lower = arg.toLowerCase(Locale.ROOT);
-                if (lower.startsWith("rick=")) {
+                if (lower.startsWith(OPTION_RICK_ROLL)) {
                     var value = arg.substring(arg.indexOf('=') + 1);
                     if (isTruthy(value)) {
                         options.put(OPTION_RICK_ROLL, true);
@@ -188,8 +204,26 @@ public class EmailHtmlValidatorCli {
         out.println("  --no-bfsg              Skip BFSG compliance checks (enabled by default)");
         out.println("  --bfsg-tags <tag,...>  Limit the BFSG audit to specific axe-core tags (e.g., wcag2aa,best-practice)");
         out.println("  --github-summary       Append the Markdown report to GITHUB_STEP_SUMMARY");
+        out.println("  --playwright-version   Print the bundled Playwright version and exit");
         out.println();
         out.println("Provide exactly one HTML source: inline HTML, a file path, an HTTP(S) URL, or pipe through stdin.");
+    }
+
+    private static String resolvePlaywrightVersion() {
+        var resource = "META-INF/maven/com.microsoft.playwright/playwright/pom.properties";
+        try (var stream = Playwright.class.getClassLoader().getResourceAsStream(resource)) {
+            if (stream != null) {
+                var properties = new Properties();
+                properties.load(stream);
+                var version = properties.getProperty("version");
+                if (version != null && !version.isBlank()) {
+                    return version.trim();
+                }
+            }
+        } catch (IOException ignored) {
+            // fallback below
+        }
+        return "unknown";
     }
 
     private static List<String> parseBfsgTags(final String raw) {
@@ -213,27 +247,37 @@ public class EmailHtmlValidatorCli {
         return List.copyOf(tags);
     }
 
+    static int exitCodeForReport(final TypeMap report) {
+        if (report == null) {
+            return 0;
+        }
+        return report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS)
+            .filter(status -> HtmlValidator.BFSG_STATUS_ERROR.equals(status))
+            .map(status -> 2)
+            .orElse(0);
+    }
+
     private static void applyEnvironment(final TypeMap options, final Map<String, String> environment) {
         if (environment == null) {
             return;
         }
-        var help = environment.get(ENV_HELP);
-        if (help != null && isTruthy(help)) {
+        var help = firstNonBlank(environment, ENV_HELP, "INPUT_HELP");
+        if (isTruthy(help)) {
             options.put(OPTION_HELP, true);
         }
-        var output = environment.get(ENV_OUTPUT_DIR);
-        if (output != null && !output.isBlank()) {
-            options.put(OPTION_OUTPUT, output.trim());
+        var output = firstNonBlank(environment, ENV_OUTPUT_DIR, "INPUT_OUTPUT_DIR");
+        if (output != null) {
+            options.put(OPTION_OUTPUT, output);
         }
-        var noBfsg = environment.get(ENV_NO_BFSG);
+        var noBfsg = firstNonBlank(environment, ENV_NO_BFSG, "INPUT_NO_BFSG");
         if (noBfsg != null) {
             options.put(OPTION_BFSG, !isTruthy(noBfsg));
         }
-        var tags = environment.get(ENV_BFSG_TAGS);
-        if (tags != null && !tags.isBlank()) {
+        var tags = firstNonBlank(environment, ENV_BFSG_TAGS, "INPUT_BFSG_TAGS");
+        if (tags != null) {
             options.put(OPTION_BFSG_TAGS, parseBfsgTags(tags));
         }
-        var summary = environment.get(ENV_SUMMARY);
+        var summary = firstNonBlank(environment, ENV_SUMMARY, "INPUT_GITHUB_SUMMARY");
         if (summary != null && isTruthy(summary)) {
             options.put(OPTION_SUMMARY, true);
         }
@@ -241,8 +285,8 @@ public class EmailHtmlValidatorCli {
 
     private static boolean isUnicornMode(final List<String> tags) {
         return tags != null
-                && tags.size() == 1
-                && UNICORN_TAG.equalsIgnoreCase(tags.get(0));
+            && tags.size() == 1
+            && UNICORN_TAG.equalsIgnoreCase(tags.getFirst());
     }
 
     private static void writeGithubOutputs(final TypeMap report, final Path outputDir, final Map<String, String> environment) {
@@ -268,7 +312,7 @@ public class EmailHtmlValidatorCli {
         appendOutput(builder, "summary_md", outputDir.resolve("report.md").toAbsolutePath().toString());
         try {
             Files.writeString(Path.of(outputFile), builder.toString(), StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException exception) {
             throw new UncheckedIOException("Unable to write GitHub outputs", exception);
         }
@@ -289,7 +333,7 @@ public class EmailHtmlValidatorCli {
         try {
             var content = Files.readString(markdownFile, StandardCharsets.UTF_8);
             Files.writeString(Path.of(summaryPath), content + System.lineSeparator(), StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException exception) {
             throw new UncheckedIOException("Unable to write GitHub summary", exception);
         }
@@ -301,9 +345,9 @@ public class EmailHtmlValidatorCli {
 
     private static String percentage(final TypeMap report, final String field) {
         return report.asBigDecimalOpt(field)
-                .orElse(BigDecimal.ZERO)
-                .setScale(2, RoundingMode.HALF_UP)
-                .toPlainString();
+            .orElse(BigDecimal.ZERO)
+            .setScale(2, RoundingMode.HALF_UP)
+            .toPlainString();
     }
 
     private static boolean isTruthy(final String value) {
@@ -312,8 +356,24 @@ public class EmailHtmlValidatorCli {
         }
         var normalized = value.trim().toLowerCase(Locale.ROOT);
         return normalized.equals("1")
-                || normalized.equals("true")
-                || normalized.equals("yes")
-                || normalized.equals("on");
+            || normalized.equals("true")
+            || normalized.equals("yes")
+            || normalized.equals("on");
+    }
+
+    private static String firstNonBlank(final Map<String, String> environment, final String... keys) {
+        if (environment == null) {
+            return null;
+        }
+        for (String key : keys) {
+            if (key == null) {
+                continue;
+            }
+            var value = environment.get(key);
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 }

@@ -2,6 +2,7 @@ package org.nanonative.validation;
 
 import berlin.yuna.typemap.model.TypeMap;
 import org.nanonative.caniemail.CaniEmailFeatureDatabase;
+import org.nanonative.cli.EmailHtmlValidatorCli;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -14,6 +15,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+
+import static org.nanonative.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
 
 public class HtmlValidator {
 
@@ -29,6 +32,8 @@ public class HtmlValidator {
     public static final String FIELD_BFSG_STATUS = "bfsgStatus";
     public static final String FIELD_BFSG_ISSUES = "bfsgIssues";
     public static final String FIELD_BFSG_ISSUE_COUNT = "bfsgIssueCount";
+    public static final String BFSG_STATUS_ERROR = BfsgComplianceValidator.STATUS_ERROR;
+    public static final String FIELD_PLAYWRIGHT_VERSION = "playwrightVersion";
     public static final String LEVEL_ACCEPTED = "accepted";
     public static final String LEVEL_PARTIAL = "partial";
     public static final String LEVEL_REJECTED = "rejected";
@@ -39,6 +44,7 @@ public class HtmlValidator {
     private static final String FIELD_NOTES = "notes";
 
     private static final TypeMap FEATURE_LOOKUP = ValidatorHelper.buildLookup();
+    public static final String WWW_CANIEMAIL_COM = "https://www.caniemail.com";
 
     private HtmlValidator() {
     }
@@ -124,7 +130,8 @@ public class HtmlValidator {
         report.put(FIELD_UNKNOWN, unknown);
         report.put(FIELD_PARTIAL_CLIENTS, new ArrayList<>(partialClients));
         report.put(FIELD_REJECTED_CLIENTS, new ArrayList<>(rejectedClients));
-        report.put(FIELD_REFERENCE_URL, "https://www.caniemail.com");
+        report.put(FIELD_REFERENCE_URL, WWW_CANIEMAIL_COM);
+        report.put(FIELD_PLAYWRIGHT_VERSION, PLAYWRIGHT_VERSION);
         report.put(FIELD_FEATURE_COUNT, CaniEmailFeatureDatabase.featureCount());
         report.put(FIELD_CLIENT_COUNT, CaniEmailFeatureDatabase.clientCount());
         report.put(FIELD_OPERATING_SYSTEM_COUNT, CaniEmailFeatureDatabase.operatingSystemCount());

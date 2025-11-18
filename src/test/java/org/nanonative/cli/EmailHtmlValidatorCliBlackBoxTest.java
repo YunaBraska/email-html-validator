@@ -1,6 +1,7 @@
 package org.nanonative.cli;
 
 import berlin.yuna.typemap.model.TypeMap;
+import com.microsoft.playwright.Playwright;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -26,8 +27,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_BFSG;
+import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_BFSG_TAGS;
+import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_HELP;
+import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_OUTPUT;
+import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_PLAYWRIGHT_VERSION;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EmailHtmlValidatorCliBlackBoxTest {
@@ -149,11 +156,35 @@ class EmailHtmlValidatorCliBlackBoxTest {
                 "EHV_BFSG_TAGS", "wcag2aa,best-practice"
         );
         var options = EmailHtmlValidatorCli.parseOptions(new String[]{"<html></html>"}, env);
-        assertThat(options.asBooleanOpt("help")).contains(true);
-        assertThat(options.asStringOpt("outputDir")).contains("reports");
-        assertThat(options.asBooleanOpt("bfsg")).contains(false);
-        assertThat(options.asList(String.class, "bfsgTags"))
-                .containsExactly("wcag2aa", "best-practice");
+        assertThat(options.asBooleanOpt(OPTION_HELP)).contains(true);
+        assertThat(options.asStringOpt(OPTION_OUTPUT)).contains("reports");
+        assertThat(options.asBooleanOpt(OPTION_BFSG)).contains(false);
+        assertThat(options.asList(String.class, OPTION_BFSG_TAGS)).containsExactly("wcag2aa", "best-practice");
+    }
+
+    @Test
+    void shouldReportPlaywrightVersion() {
+        var expected = Optional.ofNullable(Playwright.class.getPackage())
+                .map(Package::getImplementationVersion)
+                .filter(version -> !version.isBlank())
+                .orElse("unknown");
+        var result = runCliWithStatus(0, OPTION_PLAYWRIGHT_VERSION);
+        assertThat(result[0]).contains("Playwright version: " + expected);
+        assertThat(result[1]).isEmpty();
+    }
+
+    @Test
+    void shouldExitWhenBfsgReportsError() {
+        var report = new TypeMap();
+        report.put(HtmlValidator.FIELD_BFSG_STATUS, HtmlValidator.BFSG_STATUS_ERROR);
+        assertThat(EmailHtmlValidatorCli.exitCodeForReport(report)).isEqualTo(2);
+    }
+
+    @Test
+    void shouldReturnSuccessWhenBfsgPasses() {
+        var report = new TypeMap();
+        report.put(HtmlValidator.FIELD_BFSG_STATUS, "pass");
+        assertThat(EmailHtmlValidatorCli.exitCodeForReport(report)).isEqualTo(0);
     }
 
     @Test
@@ -407,6 +438,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
         assertThat(json.asLongOpt(HtmlValidator.FIELD_CLIENT_COUNT)).contains((long) CaniEmailFeatureDatabase.clientCount());
         assertThat(json.asLongOpt(HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT)).contains((long) CaniEmailFeatureDatabase.operatingSystemCount());
         assertThat(json.asStringOpt(HtmlValidator.FIELD_REFERENCE_URL)).contains("https://www.caniemail.com");
+        assertThat(json.asStringOpt(HtmlValidator.FIELD_PLAYWRIGHT_VERSION)).contains(EmailHtmlValidatorCli.PLAYWRIGHT_VERSION);
         assertClients(json.asList(String.class, HtmlValidator.FIELD_PARTIAL_CLIENTS));
         assertClients(json.asList(String.class, HtmlValidator.FIELD_REJECTED_CLIENTS));
         return json;
@@ -448,6 +480,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
             CaniEmailFeatureDatabase.operatingSystemCount()
         );
         assertThat(output).contains(datasetSummary);
+        assertThat(output).contains("Playwright version: " + EmailHtmlValidatorCli.PLAYWRIGHT_VERSION);
         assertThat(output).contains("Reference: https://www.caniemail.com");
         assertThat(output).contains("Findings:");
     }

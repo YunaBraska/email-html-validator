@@ -181,6 +181,12 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"com.microsoft.playwright.APIRequestContext$DisposeOptions",
+  "allDeclaredFields":true,
+  "allDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"com.microsoft.playwright.options.Geolocation",
   "allDeclaredFields":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
