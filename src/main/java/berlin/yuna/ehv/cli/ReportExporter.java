@@ -1,4 +1,4 @@
-package org.nanonative.cli;
+package berlin.yuna.ehv.cli;
 
 import berlin.yuna.typemap.model.TypeMap;
 
@@ -15,25 +15,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static org.nanonative.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
-import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_ISSUES;
-import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_ISSUE_COUNT;
-import static org.nanonative.validation.HtmlValidator.FIELD_BFSG_STATUS;
-import static org.nanonative.validation.HtmlValidator.FIELD_CLIENT_COUNT;
-import static org.nanonative.validation.HtmlValidator.FIELD_FEATURE_COUNT;
-import static org.nanonative.validation.HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT;
-import static org.nanonative.validation.HtmlValidator.FIELD_PARTIAL_CLIENTS;
-import static org.nanonative.validation.HtmlValidator.FIELD_PARTIAL_NOTES;
-import static org.nanonative.validation.HtmlValidator.FIELD_REFERENCE_URL;
-import static org.nanonative.validation.HtmlValidator.FIELD_REJECTED_CLIENTS;
-import static org.nanonative.validation.HtmlValidator.FIELD_TOTAL;
-import static org.nanonative.validation.HtmlValidator.FIELD_UNKNOWN;
-import static org.nanonative.validation.HtmlValidator.LEVEL_ACCEPTED;
-import static org.nanonative.validation.HtmlValidator.LEVEL_PARTIAL;
-import static org.nanonative.validation.HtmlValidator.LEVEL_REJECTED;
-import static org.nanonative.validation.HtmlValidator.FIELD_IGNORED_FEATURES;
-import static org.nanonative.validation.HtmlValidator.FIELD_IGNORED_COUNT;
-import static org.nanonative.validation.HtmlValidator.WWW_CANIEMAIL_COM;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_BFSG_ISSUES;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_BFSG_ISSUE_COUNT;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_BFSG_STATUS;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_CLIENT_COUNT;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_FEATURE_COUNT;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_OPERATING_SYSTEM_COUNT;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_PARTIAL_CLIENTS;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_PARTIAL_NOTES;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_REFERENCE_URL;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_REJECTED_CLIENTS;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_TOTAL;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_UNKNOWN;
+import static berlin.yuna.ehv.validation.HtmlValidator.LEVEL_ACCEPTED;
+import static berlin.yuna.ehv.validation.HtmlValidator.LEVEL_PARTIAL;
+import static berlin.yuna.ehv.validation.HtmlValidator.LEVEL_REJECTED;
+import static berlin.yuna.ehv.validation.HtmlValidator.FIELD_IGNORED_FEATURES;
+import static berlin.yuna.ehv.validation.HtmlValidator.WWW_CANIEMAIL_COM;
 
 /**
  * Handles all human-friendly output: console summaries, Markdown, HTML,

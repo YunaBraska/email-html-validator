@@ -1,8 +1,8 @@
-package org.nanonative.cli;
+package berlin.yuna.ehv.cli;
 
 import berlin.yuna.typemap.model.TypeMap;
 import com.microsoft.playwright.Playwright;
-import org.nanonative.validation.HtmlValidator;
+import berlin.yuna.ehv.validation.HtmlValidator;
 
 import java.io.IOException;
 import java.io.PrintStream;

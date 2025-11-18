@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-CLI wiring, validation flow, and dataset plumbing reside under `src/main/java/org/nanonative`: `cli` (argument parsing, report export), `validation` (HTML parser, weighting, BFSG audit), and `caniemail` (static dataset + metadata). Support files stay in `src/main/resources`, including the Can I Email JSON and GraalVM configs. Tests mirror this tree in `src/test/java`, with fixtures in `src/test/resources`. Maven outputs (`target/`, native binaries, Playwright cache markers) should remain untracked.
+CLI wiring, validation flow, and dataset plumbing reside under `src/main/java/berlin/yuna`: `cli` (argument parsing, report export), `validation` (HTML parser, weighting, BFSG audit), and `caniemail` (static dataset + metadata). Support files stay in `src/main/resources`, including the Can I Email JSON and GraalVM configs. Tests mirror this tree in `src/test/java`, with fixtures in `src/test/resources`. Maven outputs (`target/`, native binaries, Playwright cache markers) should remain untracked.
 
 ## Build, Test, and Development Commands
 - `mvn clean package` — compile, run the suite, and create `target/email-html-validator.jar`.

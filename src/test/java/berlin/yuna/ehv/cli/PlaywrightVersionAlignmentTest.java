@@ -1,4 +1,4 @@
-package org.nanonative.cli;
+package berlin.yuna.ehv.cli;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//./mvnw -Dsync.playwright=true -Dtest=org.nanonative.cli.PlaywrightVersionAlignmentTest test
+//./mvnw -Dsync.playwright=true -Dtest=cli.berlin.yuna.PlaywrightVersionAlignmentTest test
 @EnabledIfSystemProperty(named = "sync.playwright", matches = "true")
 class PlaywrightVersionAlignmentTest {
 

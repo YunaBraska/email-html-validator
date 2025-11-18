@@ -12,7 +12,7 @@
   "methods":[{"name":"getProperty","parameterTypes":["java.lang.String"] }, {"name":"setProperty","parameterTypes":["java.lang.String","java.lang.String"] }]
 },
 {
-  "name":"org.nanonative.cli.EmailHtmlValidatorCli",
+  "name":"berlin.yuna.cli.EmailHtmlValidatorCli",
   "methods":[{"name":"main","parameterTypes":["java.lang.String[]"] }]
 }
 ]

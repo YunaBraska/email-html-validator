@@ -1,4 +1,4 @@
-package org.nanonative.caniemail;
+package berlin.yuna.ehv.caniemail;
 
 import berlin.yuna.typemap.model.TypeMap;
 

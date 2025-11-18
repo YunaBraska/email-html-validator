@@ -1,8 +1,7 @@
-package org.nanonative.validation;
+package berlin.yuna.ehv.validation;
 
 import berlin.yuna.typemap.model.TypeMap;
-import org.nanonative.caniemail.CaniEmailFeatureDatabase;
-import org.nanonative.cli.EmailHtmlValidatorCli;
+import berlin.yuna.ehv.caniemail.CaniEmailFeatureDatabase;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,7 +16,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static org.nanonative.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
 
 /**
  * Weighs HTML features against the Can I Email dataset and keeps score. If

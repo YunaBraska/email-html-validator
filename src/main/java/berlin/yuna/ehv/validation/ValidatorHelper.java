@@ -1,9 +1,9 @@
-package org.nanonative.validation;
+package berlin.yuna.ehv.validation;
 
 import berlin.yuna.typemap.model.TypeMap;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
-import org.nanonative.caniemail.CaniEmailFeatureDatabase;
+import berlin.yuna.ehv.caniemail.CaniEmailFeatureDatabase;
 
 import java.util.ArrayList;
 import java.util.HashSet;
