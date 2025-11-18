@@ -44,6 +44,7 @@ jobs:
           token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
           submodules: true
       - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
+        id: cache_build
         uses: actions/cache@v4
         with:
           path: |
@@ -62,6 +63,7 @@ jobs:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'temurin'
       - name: "🧱 Install Playwright system dependencies"
+        if: ${{ steps.cache_build.outputs.cache-hit != 'true' }}
         run: |
           ${{ steps.java_info.outputs.cmd }} -B -q exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
       - name: "🗒️ Maven License Info"
@@ -77,7 +79,7 @@ jobs:
           if [ "${{ steps.java_info.outputs.builder_name }}" != "Gradle" ]; then
             ${{ steps.java_info.outputs.cmd_update_props }}
             ${{ steps.java_info.outputs.cmd_update_parent }}
-            ${{ steps.java_info.outputs.cmd }} -Dsync.playwright=true -Dtest=berlin.yuna.cli.PlaywrightVersionAlignmentTest test
+            ${{ steps.java_info.outputs.cmd }} -Dsync.playwright=true -Dtest=berlin.yuna.ehv.cli.PlaywrightVersionAlignmentTest test
           fi
           git config --global user.name 'Kira Bot'
           git config --global user.email 'kira@noreply.github.com'
