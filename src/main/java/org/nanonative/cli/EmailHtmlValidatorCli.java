@@ -340,7 +340,16 @@ public class EmailHtmlValidatorCli {
     }
 
     private static void appendOutput(final StringBuilder builder, final String key, final String value) {
-        builder.append(key).append('=').append(value == null ? "" : value).append(System.lineSeparator());
+        builder.append(key)
+            .append('=')
+            .append(value == null ? "" : sanitizeGithubOutput(value))
+            .append(System.lineSeparator());
+    }
+
+    private static String sanitizeGithubOutput(final String value) {
+        return value.replace("%", "%25")
+            .replace("\r", "%0D")
+            .replace("\n", "%0A");
     }
 
     private static String percentage(final TypeMap report, final String field) {

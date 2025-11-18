@@ -13,31 +13,8 @@ jobs:
     steps:
       - name: "🧑‍💻 Checkout"
         uses: actions/checkout@v3
-      - name: "🧱 Install Playwright system dependencies"
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-0 \
-            libgtk-4-1 \
-            libgraphene-1.0-0 \
-            libwoff1 \
-            libevent-2.1-7 \
-            libopus0 \
-            libgstreamer1.0-0 \
-            libgstreamer-gl1.0-0 \
-            libgstreamer-plugins-base1.0-0 \
-            gstreamer1.0-plugins-good \
-            gstreamer1.0-plugins-bad \
-            gstreamer1.0-libav \
-            libflite1 \
-            libharfbuzz-icu0 \
-            libsecret-1-0 \
-            libhyphen0 \
-            libmanette-0.2-0 \
-            libgles2 \
-            libx264-164 \
-            libavif16 \
-            libvpx9
+        with:
+          submodules: true
       - name: "Run Service"
         uses: YunaBraska/email-html-validator@main
       - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
@@ -58,6 +35,9 @@ jobs:
         with:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'temurin'
+      - name: "🧱 Install Playwright system dependencies"
+        run: |
+          ${{ steps.java_info.outputs.cmd }} -B -q exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
       - name: "🧪 Build & Test"
         run: ${{ steps.java_info.outputs.cmd_test_build }}
         env:
