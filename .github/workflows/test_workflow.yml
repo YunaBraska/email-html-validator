@@ -18,6 +18,7 @@ jobs:
       - name: "Run Service"
         uses: YunaBraska/email-html-validator@main
       - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
+        id: "cache_build"
         uses: actions/cache@v4
         with:
           path: |
@@ -36,6 +37,7 @@ jobs:
           java-version: ${{ steps.java_info.outputs.java_version }}
           distribution: 'temurin'
       - name: "🧱 Install Playwright system dependencies"
+        if: ${{ steps.cache_build.outputs.cache-hit != 'true' }}
         run: |
           ${{ steps.java_info.outputs.cmd }} -B -q exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps"
       - name: "🧪 Build & Test"
