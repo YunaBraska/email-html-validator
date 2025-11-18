@@ -29,3 +29,5 @@ updates:
       # Ignore non-stable releases (Maven uses different version patterns)
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # Playwright is controlled manually to match Deque bundles
+      - dependency-name: "com.microsoft.playwright:playwright"
