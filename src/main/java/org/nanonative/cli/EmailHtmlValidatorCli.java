@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 
 public class EmailHtmlValidatorCli {
@@ -32,6 +31,7 @@ public class EmailHtmlValidatorCli {
     public static final String OPTION_SUMMARY = "--github-summary";
     public static final String OPTION_PLAYWRIGHT_VERSION = "--playwright-version";
     public static final String PLAYWRIGHT_VERSION = resolvePlaywrightVersion();
+    private static final String OPTION_IGNORE_SLUGS = "--ignore-slugs";
     private static final String DEFAULT_OUTPUT_DIR = "reports";
     private static final String ENV_PREFIX = "EHV_";
     private static final String ENV_HELP = ENV_PREFIX + "HELP";
@@ -40,6 +40,7 @@ public class EmailHtmlValidatorCli {
     private static final String ENV_BFSG_TAGS = ENV_PREFIX + "BFSG_TAGS";
     private static final String ENV_SUMMARY = ENV_PREFIX + "SUMMARY";
     private static final String ENV_GITHUB_OUTPUT = "GITHUB_OUTPUT";
+    private static final String ENV_IGNORE_SLUGS = ENV_PREFIX + "IGNORE_SLUGS";
     private static final String UNICORN_TAG = "unicorn";
     private static final String RICK_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
@@ -82,6 +83,11 @@ public class EmailHtmlValidatorCli {
             var bfsgTags = unicornMode ? List.<String>of() : rawTags;
             TypeMap report = HtmlValidator.validate(html, runBfsg, bfsgTags);
             report.put(HtmlValidator.FIELD_PLAYWRIGHT_VERSION, PLAYWRIGHT_VERSION);
+            var ignoredSlugs = new ArrayList<>(HtmlValidator.DEFAULT_IGNORED_SLUGS);
+            if (options.containsKey(OPTION_IGNORE_SLUGS)) {
+                ignoredSlugs.addAll(options.asList(String.class, OPTION_IGNORE_SLUGS));
+            }
+            HtmlValidator.ignoreSlugs(report, ignoredSlugs);
             if (unicornMode) {
                 out.println("🦄 Weighted coverage certified by Unicorn Labs.");
             }
@@ -168,13 +174,19 @@ public class EmailHtmlValidatorCli {
                         options.put(OPTION_SUMMARY, true);
                         continue;
                     }
+                    case OPTION_IGNORE_SLUGS -> {
+                        if (index + 1 >= args.length) {
+                            throw new IllegalArgumentException("Missing slug list for " + arg);
+                        }
+                        options.put(OPTION_IGNORE_SLUGS, parseIgnoreSlugs(args[++index]));
+                        continue;
+                    }
                 }
                 var lower = arg.toLowerCase(Locale.ROOT);
                 if (lower.startsWith(OPTION_RICK_ROLL)) {
                     var value = arg.substring(arg.indexOf('=') + 1);
-                    if (isTruthy(value)) {
+                    if (isTruthy(value))
                         options.put(OPTION_RICK_ROLL, true);
-                    }
                     continue;
                 }
                 if (!builder.isEmpty()) {
@@ -247,12 +259,29 @@ public class EmailHtmlValidatorCli {
         return List.copyOf(tags);
     }
 
+    private static List<String> parseIgnoreSlugs(final String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        var slugs = new ArrayList<String>();
+        for (String part : raw.split(",")) {
+            if (part == null) {
+                continue;
+            }
+            var trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                slugs.add(trimmed);
+            }
+        }
+        return slugs.isEmpty() ? List.of() : List.copyOf(slugs);
+    }
+
     static int exitCodeForReport(final TypeMap report) {
         if (report == null) {
             return 0;
         }
         return report.asStringOpt(HtmlValidator.FIELD_BFSG_STATUS)
-            .filter(status -> HtmlValidator.BFSG_STATUS_ERROR.equals(status))
+            .filter(HtmlValidator.BFSG_STATUS_ERROR::equals)
             .map(status -> 2)
             .orElse(0);
     }
@@ -278,8 +307,12 @@ public class EmailHtmlValidatorCli {
             options.put(OPTION_BFSG_TAGS, parseBfsgTags(tags));
         }
         var summary = firstNonBlank(environment, ENV_SUMMARY, "INPUT_GITHUB_SUMMARY");
-        if (summary != null && isTruthy(summary)) {
+        if (isTruthy(summary)) {
             options.put(OPTION_SUMMARY, true);
+        }
+        var ignore = firstNonBlank(environment, ENV_IGNORE_SLUGS, "INPUT_IGNORE_SLUGS");
+        if (ignore != null) {
+            options.put(OPTION_IGNORE_SLUGS, parseIgnoreSlugs(ignore));
         }
     }
 
@@ -360,9 +393,8 @@ public class EmailHtmlValidatorCli {
     }
 
     private static boolean isTruthy(final String value) {
-        if (value == null) {
+        if (value == null)
             return false;
-        }
         var normalized = value.trim().toLowerCase(Locale.ROOT);
         return normalized.equals("1")
             || normalized.equals("true")
@@ -371,9 +403,8 @@ public class EmailHtmlValidatorCli {
     }
 
     private static String firstNonBlank(final Map<String, String> environment, final String... keys) {
-        if (environment == null) {
+        if (environment == null)
             return null;
-        }
         for (String key : keys) {
             if (key == null) {
                 continue;

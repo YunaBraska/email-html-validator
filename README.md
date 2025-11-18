@@ -40,6 +40,7 @@ email-html-validator [OPTIONS] <HTML|FILE|URL|->
 | `--output-dir <dir>`    | Persist JSON, XML, HTML, and Markdown reports; defaults to `./reports`                   |
 | `--no-bfsg`             | Skip the BFSG compliance audit (enabled by default; uses axe-core + Playwright)          |
 | `--bfsg-tags <tag,...>` | Restrict the BFSG audit to comma-separated axe-core tags (e.g., `wcag2aa,best-practice`) |
+| `--ignore-slugs <slug,...>` | Ignore specific unknown/partial slugs (defaults to `tag:html,tag:head,tag:body`)        |
 | `--help`                | Show usage and exit                                                                      |
 | `--github-summary`      | Append the generated Markdown report to `GITHUB_STEP_SUMMARY` (GitHub Actions)           |
 | `--playwright-version`  | Print the bundled Playwright Java client version and exit                                |
@@ -48,6 +49,8 @@ email-html-validator [OPTIONS] <HTML|FILE|URL|->
 - Use `-` to read from stdin (e.g., `cat mail.html \| email-html-validator - --output-dir reports`). Passing no source
   prints an error instead of blocking.
 - Exit codes: `0` success, `1` input/usage error, `2` runtime failure (network, validator bug, BFSG/Playwright error, etc.).
+- To keep reports focused, the CLI ignores `tag:html`, `tag:head`, and `tag:body` by default. Extend the ignore list via
+  `--ignore-slugs`/`EHV_IGNORE_SLUGS` when you want to suppress additional slugs.
 
 ### Environment Overrides
 
@@ -60,6 +63,7 @@ Actions and Docker wrappers:
 | `EHV_OUTPUT_DIR` | Sets the report directory (defaults to `./reports`)      |
 | `EHV_NO_BFSG`    | Truthy values disable the BFSG audit (`--no-bfsg`)       |
 | `EHV_BFSG_TAGS`  | Comma-separated axe-core tags (same as `--bfsg-tags`)    |
+| `EHV_IGNORE_SLUGS` | Comma-separated slugs to hide (same as `--ignore-slugs`) |
 | `EHV_SUMMARY`    | Truthy values enable `--github-summary` behavior         |
 
 Set `PLAYWRIGHT_CLI_DIR` (or `EHV_PLAYWRIGHT_CLI_DIR`) to point at a Playwright CLI installation when you provision the

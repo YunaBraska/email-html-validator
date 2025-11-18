@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static org.nanonative.cli.EmailHtmlValidatorCli.PLAYWRIGHT_VERSION;
 
@@ -45,6 +46,7 @@ public class HtmlValidator {
 
     private static final TypeMap FEATURE_LOOKUP = ValidatorHelper.buildLookup();
     public static final String WWW_CANIEMAIL_COM = "https://www.caniemail.com";
+    public static final List<String> DEFAULT_IGNORED_SLUGS = List.of("tag:html", "tag:head", "tag:body");
 
     private HtmlValidator() {
     }
@@ -280,5 +282,38 @@ public class HtmlValidator {
         entry.put("title", title);
         entry.put(FIELD_STATS, stats);
         return entry;
+    }
+
+    public static TypeMap ignoreSlugs(final TypeMap report, final List<String> slugs) {
+        if (report == null || slugs == null || slugs.isEmpty()) {
+            return report;
+        }
+        var normalized = slugs.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .map(value -> value.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+        if (normalized.isEmpty()) {
+            return report;
+        }
+        var unknown = report.asList(String.class, FIELD_UNKNOWN);
+        if (!unknown.isEmpty()) {
+            var filtered = unknown.stream()
+                    .filter(slug -> !normalized.contains(slug.toLowerCase(Locale.ROOT)))
+                    .toList();
+            report.put(FIELD_UNKNOWN, filtered);
+        }
+        var partialNotes = report.asMap(FIELD_PARTIAL_NOTES);
+        if (!partialNotes.isEmpty()) {
+            var keys = new ArrayList<>(partialNotes.keySet());
+            for (Object key : keys) {
+                var slug = String.valueOf(key);
+                if (normalized.contains(slug.toLowerCase(Locale.ROOT))) {
+                    partialNotes.remove(key);
+                }
+            }
+        }
+        return report;
     }
 }

@@ -11,6 +11,9 @@ inputs:
   bfsg_tags:
     description: "Comma-separated axe-core tags for the BFSG audit (e.g., wcag2aa,best-practice)"
     required: false
+  ignore_slugs:
+    description: "Comma-separated slugs to ignore (e.g., tag:html,tag:head)"
+    required: false
   help:
     description: "Show usage and exit"
     required: false
@@ -50,10 +53,11 @@ runs:
   image: "docker://ghcr.io/yunabraska/api-doc-crafter:latest"
   args:
     - ${{ inputs.source }}
-  env:
+env:
     EHV_OUTPUT_DIR: ${{ inputs.output_dir }}
     EHV_NO_BFSG: ${{ inputs.no_bfsg }}
     EHV_BFSG_TAGS: ${{ inputs.bfsg_tags }}
+    EHV_IGNORE_SLUGS: ${{ inputs.ignore_slugs }}
     EHV_HELP: ${{ inputs.help }}
     EHV_SUMMARY: ${{ inputs.github_summary }}
 

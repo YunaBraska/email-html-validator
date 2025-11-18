@@ -68,7 +68,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
         var dir = reportDir(info);
         var output = runCli(dir, "<html><body><table style='color:#fff'></table></body></html>");
         assertConsole(output, 5, "83.54", "7.32", "9.15");
-        assertReport(dir, percentage("83.54"), percentage("7.32"), percentage("9.15"), "tag:html");
+        assertReport(dir, percentage("83.54"), percentage("7.32"), percentage("9.15"));
     }
 
     @Test
@@ -76,7 +76,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
         var dir = reportDir(info);
         var output = runCli(dir, "<html", "><body><p>split</p></body></html>");
         assertConsole(output, 3, "67.07", "14.63", "18.29");
-        assertReport(dir, percentage("67.07"), percentage("14.63"), percentage("18.29"), "tag:html");
+        assertReport(dir, percentage("67.07"), percentage("14.63"), percentage("18.29"));
     }
 
     @Test
@@ -86,7 +86,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
         Files.writeString(htmlFile, "<html><body><video controls></video></body></html>", StandardCharsets.UTF_8);
         var output = runCli(dir, htmlFile.toString());
         assertConsole(output, 4, "26.83", "20.73", "52.44");
-        assertReport(dir, percentage("26.83"), percentage("20.73"), percentage("52.44"), "tag:html", "attribute:controls");
+        assertReport(dir, percentage("26.83"), percentage("20.73"), percentage("52.44"), "attribute:controls");
     }
 
     @Test
@@ -99,7 +99,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
             var remoteUrl = URI.create("http://localhost:" + server.getAddress().getPort() + "/").toString();
             var output = runCli(dir, remoteUrl);
             assertConsole(output, 4, "27.79", "18.21", "54.01");
-            assertReport(dir, percentage("27.79"), percentage("18.21"), percentage("54.01"), "tag:html", "attribute:autoplay");
+            assertReport(dir, percentage("27.79"), percentage("18.21"), percentage("54.01"), "attribute:autoplay");
         } finally {
             server.stop(0);
         }
@@ -136,7 +136,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
         var dir = reportDir(info);
         var output = runCli(dir, "<html><body><p>parallel</p></body></html>");
         assertConsole(output, 3, "67.07", "14.63", "18.29");
-        assertReport(dir, percentage("67.07"), percentage("14.63"), percentage("18.29"), "tag:html");
+        assertReport(dir, percentage("67.07"), percentage("14.63"), percentage("18.29"));
     }
 
     @Test
@@ -144,7 +144,7 @@ class EmailHtmlValidatorCliBlackBoxTest {
         var dir = reportDir(info);
         var output = runCliWithStdin(dir, "<html><body><p>stdin</p></body></html>", "-");
         assertConsole(output, 3, "67.07", "14.63", "18.29");
-        assertReport(dir, percentage("67.07"), percentage("14.63"), percentage("18.29"), "tag:html");
+        assertReport(dir, percentage("67.07"), percentage("14.63"), percentage("18.29"));
     }
 
     @Test
@@ -255,9 +255,9 @@ class EmailHtmlValidatorCliBlackBoxTest {
         var output = runCli(dir, template);
         assertConsole(output, 10, "62.67", "17.72", "19.61");
         var report = assertReport(dir, percentage("62.67"), percentage("17.72"), percentage("19.61"),
-            "tag:html", "tag:head", "css:@media screen { .content { color", "css:} }\n      @media (-webkit-device-pixel-ratio");
+            "css:@media screen { .content { color", "css:} }\n      @media (-webkit-device-pixel-ratio");
         var notes = report.asMap(HtmlValidator.FIELD_PARTIAL_NOTES);
-        assertThat(notes).containsKeys("css:at-media", "css:at-media-device-pixel-ratio", "tag:body", "tag:style");
+        assertThat(notes).containsKeys("css:at-media", "css:at-media-device-pixel-ratio", "tag:style");
     }
 
     @Test
@@ -318,7 +318,17 @@ class EmailHtmlValidatorCliBlackBoxTest {
         assertConsole(output, 4, "0.00", "0.00", "0.00");
         var report = assertReport(dir, percentage("0.00"), percentage("0.00"), percentage("0.00"));
         assertThat(report.asList(String.class, HtmlValidator.FIELD_UNKNOWN))
-            .contains("tag:head", "tag:meta", "attribute:name", "attribute:content");
+            .contains("tag:meta", "attribute:name", "attribute:content");
+    }
+
+    @Test
+    void shouldHonorIgnoreSlugsOption(final TestInfo info) {
+        var dir = reportDir(info);
+        var html = "<meta name='viewport' content='width=device-width'>";
+        runCli(dir, "--ignore-slugs", "tag:meta,attribute:name", html);
+        var report = readJson(dir.resolve("report.json"));
+        assertThat(report.asList(String.class, HtmlValidator.FIELD_UNKNOWN))
+            .doesNotContain("tag:meta", "attribute:name");
     }
 
     @Test
