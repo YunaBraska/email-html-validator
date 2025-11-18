@@ -47,6 +47,7 @@ jobs:
             ~/.m2
             ~/.gradle/caches
             ~/.gradle/wrapper
+            ~/.cache/ms-playwright
           key: unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}
           restore-keys: unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}
       - name: "🔍 Read Java Info"
