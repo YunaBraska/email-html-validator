@@ -322,10 +322,10 @@ class EmailHtmlValidatorCliBlackBoxTest {
     }
 
     @Test
-    void shouldHonorIgnoreSlugsOption(final TestInfo info) {
+    void shouldHonorIgnoreFeaturesOption(final TestInfo info) {
         var dir = reportDir(info);
         var html = "<meta name='viewport' content='width=device-width'>";
-        runCli(dir, "--ignore-slugs", "tag:meta,attribute:name", html);
+        runCli(dir, "--ignore-features", "tag:meta,attribute:name", html);
         var report = readJson(dir.resolve("report.json"));
         assertThat(report.asList(String.class, HtmlValidator.FIELD_UNKNOWN))
             .doesNotContain("tag:meta", "attribute:name");

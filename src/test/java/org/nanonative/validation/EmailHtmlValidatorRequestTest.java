@@ -79,7 +79,7 @@ class EmailHtmlValidatorRequestTest {
         var html = "<html><body><meta name='viewport'></body></html>";
         var report = EmailHtmlValidatorRequest.html(html)
             .bfsg(false)
-            .ignoreSlugs(List.of("tag:meta"))
+            .ignoreFeatures(List.of("tag:meta"))
             .disableReportExport()
             .run();
 

@@ -13,15 +13,31 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * Resolves user-provided HTML inputs into actual markup. Accepts inline HTML,
+ * files, stdin, or remote URLs without making you think too hard.
+ */
 public class HtmlSourceLoader {
 
-    private HtmlSourceLoader() {
+    /**
+     * Utility constructor. If you manage to instantiate this class you probably
+     * deserve a cookie, but please don't.
+     */
+    protected HtmlSourceLoader() {
     }
 
+    /**
+     * Loads HTML from whatever the user hands us: inline markup, file path,
+     * URL, or {@code -} for stdin.
+     */
     public static String load(final String source) {
         return load(source, HtmlSourceLoader::fetchRemote);
     }
 
+    /**
+     * Same as {@link #load(String)} but allows overriding the HTTP fetcher for
+     * tests that prefer to stay offline.
+     */
     public static String load(final String source, final Function<URI, String> fetcher) {
         Objects.requireNonNull(fetcher, "fetcher");
         if (source == null || source.isBlank() || "-".equals(source.trim())) {
@@ -41,12 +57,19 @@ public class HtmlSourceLoader {
         throw new IllegalArgumentException("Unable to interpret HTML source: " + source);
     }
 
-    private static boolean looksLikeInlineHtml(final String source) {
+    /**
+     * Quick heuristics to see if the input is literal HTML rather than a path.
+     */
+    protected static boolean looksLikeInlineHtml(final String source) {
         var trimmed = source.stripLeading();
         return trimmed.startsWith("<");
     }
 
-    private static URI tryCreateUri(final String input) {
+    /**
+     * Attempts to parse the input as HTTP(S) URI. Returns {@code null} for
+     * everything else so the caller can try other strategies.
+     */
+    protected static URI tryCreateUri(final String input) {
         try {
             var uri = URI.create(input.trim());
             var scheme = uri.getScheme();
@@ -58,7 +81,11 @@ public class HtmlSourceLoader {
         return null;
     }
 
-    private static String readFile(final Path path) {
+    /**
+     * Reads the referenced file in UTF-8. Throws a friendly exception if the OS
+     * says "no".
+     */
+    protected static String readFile(final Path path) {
         try {
             return Files.readString(path, StandardCharsets.UTF_8);
         } catch (IOException exception) {
@@ -66,7 +93,10 @@ public class HtmlSourceLoader {
         }
     }
 
-    private static String readStdIn() {
+    /**
+     * Slurps stdin until EOF. Handy for shell pipelines and impromptu magic.
+     */
+    protected static String readStdIn() {
         try {
             return new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException exception) {
@@ -74,7 +104,10 @@ public class HtmlSourceLoader {
         }
     }
 
-    private static String fetchRemote(final URI uri) {
+    /**
+     * Fetches remote HTML over HTTP(S) with a polite user agent and timeout.
+     */
+    protected static String fetchRemote(final URI uri) {
         var client = httpClient();
         var request = HttpRequest.newBuilder(uri.normalize())
             .GET()
@@ -95,7 +128,10 @@ public class HtmlSourceLoader {
         }
     }
 
-    private static HttpClient httpClient() {
+    /**
+     * Shared HTTP client tuned for short-lived CLI calls.
+     */
+    protected static HttpClient httpClient() {
         return HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
             .connectTimeout(Duration.ofSeconds(5))
