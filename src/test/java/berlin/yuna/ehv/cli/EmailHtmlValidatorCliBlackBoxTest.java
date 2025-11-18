@@ -1,4 +1,4 @@
-package org.nanonative.cli;
+package berlin.yuna.ehv.cli;
 
 import berlin.yuna.typemap.model.TypeMap;
 import com.microsoft.playwright.Playwright;
@@ -8,8 +8,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.TestInstance;
-import org.nanonative.caniemail.CaniEmailFeatureDatabase;
-import org.nanonative.validation.HtmlValidator;
+import berlin.yuna.ehv.caniemail.CaniEmailFeatureDatabase;
+import berlin.yuna.ehv.validation.HtmlValidator;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,11 +30,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_BFSG;
-import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_BFSG_TAGS;
-import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_HELP;
-import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_OUTPUT;
-import static org.nanonative.cli.EmailHtmlValidatorCli.OPTION_PLAYWRIGHT_VERSION;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.OPTION_BFSG;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.OPTION_BFSG_TAGS;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.OPTION_HELP;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.OPTION_OUTPUT;
+import static berlin.yuna.ehv.cli.EmailHtmlValidatorCli.OPTION_PLAYWRIGHT_VERSION;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EmailHtmlValidatorCliBlackBoxTest {

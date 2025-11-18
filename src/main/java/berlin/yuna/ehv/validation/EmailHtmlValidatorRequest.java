@@ -1,7 +1,7 @@
-package org.nanonative.validation;
+package berlin.yuna.ehv.validation;
 
 import berlin.yuna.typemap.model.TypeMap;
-import org.nanonative.cli.ReportExporter;
+import berlin.yuna.ehv.cli.ReportExporter;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

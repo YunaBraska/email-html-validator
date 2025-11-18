@@ -53,7 +53,7 @@ runs:
   image: "docker://ghcr.io/yunabraska/api-doc-crafter:latest"
   args:
     - ${{ inputs.source }}
-env:
+  env:
     EHV_OUTPUT_DIR: ${{ inputs.output_dir }}
     EHV_NO_BFSG: ${{ inputs.no_bfsg }}
     EHV_BFSG_TAGS: ${{ inputs.bfsg_tags }}

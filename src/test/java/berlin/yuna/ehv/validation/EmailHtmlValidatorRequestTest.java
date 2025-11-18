@@ -1,4 +1,4 @@
-package org.nanonative.validation;
+package berlin.yuna.ehv.validation;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -84,5 +84,15 @@ class EmailHtmlValidatorRequestTest {
             .run();
 
         assertThat(report.asList(String.class, HtmlValidator.FIELD_UNKNOWN)).doesNotContain("tag:meta");
+    }
+
+    @Test
+    void shouldExposeShortAlias() {
+        var report = EmailValidator.html("<html><body><p>alias</p></body></html>")
+            .bfsg(false)
+            .disableReportExport()
+            .run();
+
+        assertThat(report.containsKey(HtmlValidator.FIELD_TOTAL)).isTrue();
     }
 }

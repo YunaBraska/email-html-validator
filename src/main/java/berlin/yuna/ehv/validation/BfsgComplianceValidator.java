@@ -1,4 +1,4 @@
-package org.nanonative.validation;
+package berlin.yuna.ehv.validation;
 
 import com.deque.html.axecore.playwright.AxeBuilder;
 import com.deque.html.axecore.results.AxeResults;
