@@ -41,7 +41,6 @@ jobs:
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
-          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
           submodules: true
       - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
         id: cache_build
@@ -75,14 +74,15 @@ jobs:
       - name: "🔄 Update"
         id: "update"
         run: |
+          git config --global user.name 'Kira Bot'
+          git config --global user.email 'kira@noreply.github.com'
+          git pull || true
           ${{ steps.java_info.outputs.cmd_update_wrapper }}
           if [ "${{ steps.java_info.outputs.builder_name }}" != "Gradle" ]; then
             ${{ steps.java_info.outputs.cmd_update_props }}
             ${{ steps.java_info.outputs.cmd_update_parent }}
             ${{ steps.java_info.outputs.cmd }} -Dsync.playwright=true -Dtest=berlin.yuna.ehv.cli.PlaywrightVersionAlignmentTest test
           fi
-          git config --global user.name 'Kira Bot'
-          git config --global user.email 'kira@noreply.github.com'
           if [[ -n $(git status -s) && ${{ startsWith(inputs.ref, 'refs/heads/') }} ]]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
           echo "has_changes [true]"
@@ -94,12 +94,12 @@ jobs:
           echo "Deploy [${{ inputs.run_deploy }}]"
         env:
           GITHUB_USER: 'GithubBot'
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
       - name: "🧪 Build & Test"
         run: ${{ steps.java_info.outputs.cmd_test_build }}
         env:
           GITHUB_USER: 'GithubBot'
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
       - name: "📝 Create new version, deploy [${{ inputs.run_deploy }}] changes [${{ steps.update.outputs.has_changes == 'true' }}]"
         if: ${{ steps.update.outputs.has_changes == 'true' || inputs.run_deploy }}
         id: "semver_info"
@@ -119,4 +119,7 @@ jobs:
     if: ${{ inputs.run_deploy || needs.deploy.outputs.has_changes == 'true' }}
     name: "Trigger Release"
     uses: YunaBraska/email-html-validator/.github/workflows/github_release.yml@main
+    permissions:
+      contents: write
+      packages: write
     secrets: inherit

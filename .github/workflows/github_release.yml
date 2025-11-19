@@ -24,13 +24,14 @@ jobs:
     name: "Jar"
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
         uses: actions/checkout@main
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
-          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
       - name: "🔍 Read Java Info"
         id: "java_info"
         uses: YunaBraska/java-info-action@main
@@ -67,6 +68,8 @@ jobs:
     name: "Linux"
     timeout-minutes: 120
     runs-on: Ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         # Available amd64, amd64/v2 amd64/v3, arm64, riscv64, ppc64le, s390x, 386, arm/v7, arm/v6
@@ -80,7 +83,6 @@ jobs:
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
-          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
       - name: "🔍 Read Java Info"
         id: "java_info"
         uses: YunaBraska/java-info-action@main
@@ -129,13 +131,14 @@ jobs:
     name: "MacOs"
     timeout-minutes: 10
     runs-on: macos-latest
+    permissions:
+      contents: read
     steps:
       - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
         uses: actions/checkout@main
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
-          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
       - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
         uses: actions/cache@v4
         with:
@@ -174,13 +177,14 @@ jobs:
     name: "Windows"
     timeout-minutes: 10
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
         uses: actions/checkout@main
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
-          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
       - name: "♻️ Restore cache [${{runner.os}}-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
         uses: actions/cache@v4
         with:
@@ -223,13 +227,15 @@ jobs:
     needs: [ jar, linux, macos, windows ]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
         uses: actions/checkout@main
         with:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
-          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
         uses: actions/cache@v4
@@ -290,6 +296,8 @@ jobs:
     timeout-minutes: 5
     needs: [ jar, linux, macos, windows, deploy ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: "💾 Download Artifacts"
         uses: actions/download-artifact@v6
@@ -303,7 +311,7 @@ jobs:
           prerelease: false
           allowUpdates: true
           removeArtifacts: true
-          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           tag: ${{ needs.linux.outputs.version }}
           name: ${{ needs.linux.outputs.version }}
           artifacts: ${{ github.event.repository.name }}-*.native,${{ github.event.repository.name }}-*.exe,${{ github.event.repository.name }}-*.jar

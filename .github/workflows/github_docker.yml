@@ -33,8 +33,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      attestations: write
-      id-token: write
     steps:
       - name: "🧑‍💻 Checkout [${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}]"
         uses: actions/checkout@main
@@ -70,4 +68,3 @@ jobs:
             ${{ env.tag_prefix }}:${{ github.sha }}
             ${{ env.tag_prefix }}:${{ inputs.version || steps.java_info.outputs.project_version }}
             ${{ env.tag_prefix }}:latest
-

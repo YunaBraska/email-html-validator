@@ -9,6 +9,8 @@ on:
 jobs:
   test-service:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: "🧑‍💻 Checkout"
@@ -44,7 +46,7 @@ jobs:
         run: ${{ steps.java_info.outputs.cmd_test_build }}
         env:
           GITHUB_USER: 'GithubBot'
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
       - name: "🗒️ Maven License Info"
         id: "license_info"
         uses: YunaBraska/maven-license-info-action@main
