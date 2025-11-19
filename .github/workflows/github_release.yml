@@ -22,7 +22,7 @@ concurrency:
 jobs:
   jar:
     name: "Jar"
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -129,7 +129,7 @@ jobs:
           if-no-files-found: 'error'
   macos:
     name: "MacOs"
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: macos-latest
     permissions:
       contents: read
@@ -175,7 +175,7 @@ jobs:
           if-no-files-found: 'error'
   windows:
     name: "Windows"
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: windows-latest
     permissions:
       contents: read
@@ -263,8 +263,6 @@ jobs:
           server-id: github
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN
-          gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
-          gpg-passphrase: ${{ secrets.GPG_SIGNING_KEY && 'GPG_PASSPHRASE' || '' }}
 
       - name: "📦 Deploy to GitHub Packages"
         run: ${{ steps.java_info_deploy.outputs.cmd }} deploy -Dmaven.test.skip=true -B -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }}
@@ -293,7 +291,7 @@ jobs:
 
   release:
     name: "Release"
-    timeout-minutes: 5
+    timeout-minutes: 15
     needs: [ jar, linux, macos, windows, deploy ]
     runs-on: ubuntu-latest
     permissions:
