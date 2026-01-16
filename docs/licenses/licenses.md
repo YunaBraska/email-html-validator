@@ -2,3 +2,7 @@
 
 | Name | Version | Limited | Scope |
 | ---- | ------- | ------- | ----- |
+| Apache License | 2.0 | false | compile |
+| Apache | 2.0 | false | compile |
+| MIT | 1 | false | compile |
+| MPL | 2.0 | true | compile |
