@@ -6,7 +6,7 @@
 
     <groupId>berlin.yuna</groupId>
     <artifactId>email-html-validator</artifactId>
-    <version>2026.01.0302047</version>
+    <version>2026.02.0372050</version>
     <packaging>jar</packaging>
 
     <name>email-html-validator</name>
@@ -42,8 +42,8 @@
 
         <!-- Runtime deps -->
         <jsoup.version>1.22.1</jsoup.version>
-        <typemap.version>2026.01.0250714</typemap.version>
-        <axe-core.version>4.11.0</axe-core.version>
+        <typemap.version>2026.02.0330742</typemap.version>
+        <axe-core.version>4.11.1</axe-core.version>
         <playwright.bundle.scope>compile</playwright.bundle.scope>
 
         <!-- Test deps -->
@@ -52,7 +52,7 @@
         <junit-platform-launcher.version>6.0.2</junit-platform-launcher.version>
 
         <!-- Build plugins -->
-        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
@@ -84,7 +84,7 @@
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
-            <version>1.55.0</version>
+            <version>1.56.0</version>
         </dependency>
 
         <!-- Test -->
@@ -113,7 +113,7 @@
             <dependency>
                 <groupId>com.microsoft.playwright</groupId>
                 <artifactId>driver-bundle</artifactId>
-                <version>1.55.0</version>
+                <version>1.56.0</version>
                 <scope>${playwright.bundle.scope}</scope>
             </dependency>
         </dependencies>

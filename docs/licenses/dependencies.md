@@ -2,7 +2,7 @@
 
 | Line | Group | Artifact | Version | Scope | URL | Licenses |
 | ---- | ----- | -------- | ------- | ----- | --- | -------- |
-| berlin.yuna:typemap:2026.01.0070717 | berlin.yuna | typemap | 2026.01.0070717 | compile | https://github.com/YunaBraska/typemap | Apache License (2.0) |
+| berlin.yuna:typemap:2026.01.0250714 | berlin.yuna | typemap | 2026.01.0250714 | compile | https://github.com/YunaBraska/typemap | Apache License (2.0) |
 | com.deque.html.axecore:dequeutilites:4.11.0 | com.deque.html.axecore | dequeutilites | 4.11.0 | compile | https://github.com/dequelabs/axecore-maven-html | MPL (2.0) |
 | com.deque.html.axecore:playwright:4.11.0 | com.deque.html.axecore | playwright | 4.11.0 | compile | https://github.com/dequelabs/axecore-maven-html | MPL (2.0) |
 | com.fasterxml.jackson.core:jacksonannotations:2.20 | com.fasterxml.jackson.core | jacksonannotations | 2.20 | compile | https://github.com/FasterXML/jackson | Apache License (2.0) |
