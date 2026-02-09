@@ -59,7 +59,7 @@ jobs:
           chmod +x ${filename}
           ls -lah
       - name: "💼 Save [${{ steps.artifact.outputs.filename }}] Artifact"
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
@@ -122,7 +122,7 @@ jobs:
           chmod +x ${filename}
           ls -lah
       - name: "💼 Save [${{ steps.artifact.outputs.filename }}] Artifact"
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
@@ -140,7 +140,7 @@ jobs:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
       - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.m2
@@ -168,7 +168,7 @@ jobs:
           chmod +x ${filename}
           ls -lah
       - name: "💼 Save [${{ steps.artifact.outputs.filename }}] Artifact"
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
@@ -186,7 +186,7 @@ jobs:
           fetch-depth: 1
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
       - name: "♻️ Restore cache [${{runner.os}}-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~\.m2
@@ -217,7 +217,7 @@ jobs:
           mv "target/${{ github.event.repository.name }}.native.exe" "${filename}"
           ls -lah
       - name: "💼 Save [${{ steps.artifact.outputs.filename }}] Artifact"
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ steps.artifact.outputs.filename }}
           path: ${{ steps.artifact.outputs.filename }}
@@ -238,7 +238,7 @@ jobs:
           ref: ${{ inputs.ref || github.ref || github.ref_name || github.head_ref }}
 
       - name: "♻️ Restore cache [unix-build-${{ hashFiles('**/pom.xml', '**/build.gradle*') }}]"
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.m2
@@ -298,7 +298,7 @@ jobs:
       contents: write
     steps:
       - name: "💾 Download Artifacts"
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           merge-multiple: true
           pattern: ${{ github.event.repository.name }}-*.{native,exe,jar}
