@@ -1,9 +1,9 @@
 [
     {
-        "line": "berlin.yuna:typemap:2026.01.0250714",
+        "line": "berlin.yuna:typemap:2026.02.0330742",
         "group": "berlin.yuna",
         "artifact": "typemap",
-        "version": "2026.01.0250714",
+        "version": "2026.02.0330742",
         "scope": "compile",
         "url": "https://github.com/YunaBraska/typemap",
         "licenses": [
@@ -16,10 +16,10 @@
         ]
     },
     {
-        "line": "com.deque.html.axecore:dequeutilites:4.11.0",
+        "line": "com.deque.html.axecore:dequeutilites:4.11.1",
         "group": "com.deque.html.axecore",
         "artifact": "dequeutilites",
-        "version": "4.11.0",
+        "version": "4.11.1",
         "scope": "compile",
         "url": "https://github.com/dequelabs/axecore-maven-html",
         "licenses": [
@@ -32,10 +32,10 @@
         ]
     },
     {
-        "line": "com.deque.html.axecore:playwright:4.11.0",
+        "line": "com.deque.html.axecore:playwright:4.11.1",
         "group": "com.deque.html.axecore",
         "artifact": "playwright",
-        "version": "4.11.0",
+        "version": "4.11.1",
         "scope": "compile",
         "url": "https://github.com/dequelabs/axecore-maven-html",
         "licenses": [
@@ -64,10 +64,10 @@
         ]
     },
     {
-        "line": "com.fasterxml.jackson.core:jacksoncore:2.20.0",
+        "line": "com.fasterxml.jackson.core:jacksoncore:2.20.1",
         "group": "com.fasterxml.jackson.core",
         "artifact": "jacksoncore",
-        "version": "2.20.0",
+        "version": "2.20.1",
         "scope": "compile",
         "url": "https://github.com/FasterXML/jacksoncore",
         "licenses": [
@@ -80,10 +80,10 @@
         ]
     },
     {
-        "line": "com.fasterxml.jackson.core:jacksondatabind:2.20.0",
+        "line": "com.fasterxml.jackson.core:jacksondatabind:2.20.1",
         "group": "com.fasterxml.jackson.core",
         "artifact": "jacksondatabind",
-        "version": "2.20.0",
+        "version": "2.20.1",
         "scope": "compile",
         "url": "https://github.com/FasterXML/jackson",
         "licenses": [
@@ -96,10 +96,10 @@
         ]
     },
     {
-        "line": "com.google.code.gson:gson:2.12.1",
+        "line": "com.google.code.gson:gson:2.13.2",
         "group": "com.google.code.gson",
         "artifact": "gson",
-        "version": "2.12.1",
+        "version": "2.13.2",
         "scope": "compile",
         "url": "https://github.com/google/gson",
         "licenses": [
@@ -112,10 +112,10 @@
         ]
     },
     {
-        "line": "com.google.errorprone:error_prone_annotations:2.36.0",
+        "line": "com.google.errorprone:error_prone_annotations:2.41.0",
         "group": "com.google.errorprone",
         "artifact": "error_prone_annotations",
-        "version": "2.36.0",
+        "version": "2.41.0",
         "scope": "compile",
         "url": "https://errorprone.info/error_prone_annotations",
         "licenses": [
@@ -128,10 +128,10 @@
         ]
     },
     {
-        "line": "com.microsoft.playwright:driver:1.55.0",
+        "line": "com.microsoft.playwright:driver:1.56.0",
         "group": "com.microsoft.playwright",
         "artifact": "driver",
-        "version": "1.55.0",
+        "version": "1.56.0",
         "scope": "compile",
         "url": "https://github.com/microsoft/playwrightjava/driver",
         "licenses": [
@@ -144,10 +144,10 @@
         ]
     },
     {
-        "line": "com.microsoft.playwright:driverbundle:1.55.0",
+        "line": "com.microsoft.playwright:driverbundle:1.56.0",
         "group": "com.microsoft.playwright",
         "artifact": "driverbundle",
-        "version": "1.55.0",
+        "version": "1.56.0",
         "scope": "compile",
         "url": "https://github.com/microsoft/playwrightjava/driver-bundle",
         "licenses": [
@@ -160,10 +160,10 @@
         ]
     },
     {
-        "line": "com.microsoft.playwright:playwright:1.55.0",
+        "line": "com.microsoft.playwright:playwright:1.56.0",
         "group": "com.microsoft.playwright",
         "artifact": "playwright",
-        "version": "1.55.0",
+        "version": "1.56.0",
         "scope": "compile",
         "url": "https://github.com/microsoft/playwrightjava/playwright",
         "licenses": [
@@ -176,10 +176,10 @@
         ]
     },
     {
-        "line": "commonscodec:commons-codec:1.19.0",
+        "line": "commonscodec:commons-codec:1.20.0",
         "group": "commonscodec",
         "artifact": "commonscodec",
-        "version": "1.19.0",
+        "version": "1.20.0",
         "scope": "compile",
         "url": "https://commons.apache.org/proper/commonscodec/",
         "licenses": [
@@ -192,10 +192,10 @@
         ]
     },
     {
-        "line": "commonsio:commons-io:2.20.0",
+        "line": "commonsio:commons-io:2.21.0",
         "group": "commonsio",
         "artifact": "commonsio",
-        "version": "2.20.0",
+        "version": "2.21.0",
         "scope": "compile",
         "url": "https://commons.apache.org/proper/commonsio/",
         "licenses": [

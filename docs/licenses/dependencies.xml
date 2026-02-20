@@ -3,7 +3,7 @@
     <dependency>
         <groupId>berlin.yuna</groupId>
         <artifactId>typemap</artifactId>
-        <version>2026.01.0250714</version>
+        <version>2026.02.0330742</version>
         <scope>compile</scope>
         <url>https://github.com/YunaBraska/typemap</url>
         <licenses>
@@ -16,7 +16,7 @@
     <dependency>
         <groupId>com.deque.html.axecore</groupId>
         <artifactId>dequeutilites</artifactId>
-        <version>4.11.0</version>
+        <version>4.11.1</version>
         <scope>compile</scope>
         <url>https://github.com/dequelabs/axecore-maven-html</url>
         <licenses>
@@ -29,7 +29,7 @@
     <dependency>
         <groupId>com.deque.html.axecore</groupId>
         <artifactId>playwright</artifactId>
-        <version>4.11.0</version>
+        <version>4.11.1</version>
         <scope>compile</scope>
         <url>https://github.com/dequelabs/axecore-maven-html</url>
         <licenses>
@@ -55,7 +55,7 @@
     <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jacksoncore</artifactId>
-        <version>2.20.0</version>
+        <version>2.20.1</version>
         <scope>compile</scope>
         <url>https://github.com/FasterXML/jacksoncore</url>
         <licenses>
@@ -68,7 +68,7 @@
     <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jacksondatabind</artifactId>
-        <version>2.20.0</version>
+        <version>2.20.1</version>
         <scope>compile</scope>
         <url>https://github.com/FasterXML/jackson</url>
         <licenses>
@@ -81,7 +81,7 @@
     <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.12.1</version>
+        <version>2.13.2</version>
         <scope>compile</scope>
         <url>https://github.com/google/gson</url>
         <licenses>
@@ -94,7 +94,7 @@
     <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>2.36.0</version>
+        <version>2.41.0</version>
         <scope>compile</scope>
         <url>https://errorprone.info/error_prone_annotations</url>
         <licenses>
@@ -107,7 +107,7 @@
     <dependency>
         <groupId>com.microsoft.playwright</groupId>
         <artifactId>driver</artifactId>
-        <version>1.55.0</version>
+        <version>1.56.0</version>
         <scope>compile</scope>
         <url>https://github.com/microsoft/playwrightjava/driver</url>
         <licenses>
@@ -120,7 +120,7 @@
     <dependency>
         <groupId>com.microsoft.playwright</groupId>
         <artifactId>driverbundle</artifactId>
-        <version>1.55.0</version>
+        <version>1.56.0</version>
         <scope>compile</scope>
         <url>https://github.com/microsoft/playwrightjava/driver-bundle</url>
         <licenses>
@@ -133,7 +133,7 @@
     <dependency>
         <groupId>com.microsoft.playwright</groupId>
         <artifactId>playwright</artifactId>
-        <version>1.55.0</version>
+        <version>1.56.0</version>
         <scope>compile</scope>
         <url>https://github.com/microsoft/playwrightjava/playwright</url>
         <licenses>
@@ -146,7 +146,7 @@
     <dependency>
         <groupId>commonscodec</groupId>
         <artifactId>commonscodec</artifactId>
-        <version>1.19.0</version>
+        <version>1.20.0</version>
         <scope>compile</scope>
         <url>https://commons.apache.org/proper/commonscodec/</url>
         <licenses>
@@ -159,7 +159,7 @@
     <dependency>
         <groupId>commonsio</groupId>
         <artifactId>commonsio</artifactId>
-        <version>2.20.0</version>
+        <version>2.21.0</version>
         <scope>compile</scope>
         <url>https://commons.apache.org/proper/commonsio/</url>
         <licenses>
