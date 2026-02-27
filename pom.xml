@@ -6,7 +6,7 @@
 
     <groupId>berlin.yuna</groupId>
     <artifactId>email-html-validator</artifactId>
-    <version>2026.02.0512048</version>
+    <version>2026.02.0582044</version>
     <packaging>jar</packaging>
 
     <name>email-html-validator</name>
@@ -42,7 +42,7 @@
 
         <!-- Runtime deps -->
         <jsoup.version>1.22.1</jsoup.version>
-        <typemap.version>2026.02.0470744</typemap.version>
+        <typemap.version>2026.02.0530728</typemap.version>
         <axe-core.version>4.11.1</axe-core.version>
         <playwright.bundle.scope>compile</playwright.bundle.scope>
 
@@ -53,7 +53,7 @@
 
         <!-- Build plugins -->
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.5.5</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-scm-plugin.version>1.11.2</maven-scm-plugin.version>
