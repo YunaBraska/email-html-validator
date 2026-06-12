@@ -6,7 +6,7 @@
 
     <groupId>berlin.yuna</groupId>
     <artifactId>email-html-validator</artifactId>
-    <version>2026.06.1562143</version>
+    <version>2026.06.1632200</version>
     <packaging>jar</packaging>
 
     <name>email-html-validator</name>
@@ -42,7 +42,7 @@
 
         <!-- Runtime deps -->
         <jsoup.version>1.22.2</jsoup.version>
-        <typemap.version>2026.05.1481042</typemap.version>
+        <typemap.version>2026.06.1570916</typemap.version>
         <axe-core.version>4.11.3</axe-core.version>
         <playwright.bundle.scope>compile</playwright.bundle.scope>
 
