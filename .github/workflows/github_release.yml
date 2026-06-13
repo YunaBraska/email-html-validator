@@ -205,7 +205,32 @@ jobs:
       - name: "🏗️ Build [${{runner.os}}/${{runner.arch}}]"
         shell: cmd
         run: |
+          for /f "usebackq tokens=*" %%I in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%I"
+          if not defined VSINSTALL (
+            echo Visual Studio C++ build tools were not found.
+            exit /b 1
+          )
+          if not exist "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" (
+            echo vcvars64.bat was not found in "%VSINSTALL%".
+            exit /b 1
+          )
+          call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat"
           ${{ steps.java_info.outputs.cmd_build }} -Pnative
+      - name: "🧪 Smoke test [${{runner.os}}/${{runner.arch}}]"
+        shell: pwsh
+        run: |
+          & ".\target\${{ github.event.repository.name }}.native.exe" --help
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          $output = Join-Path $env:RUNNER_TEMP "email-html-validator-smoke"
+          & ".\target\${{ github.event.repository.name }}.native.exe" "<html><body><table></table></body></html>" --no-bfsg --output-dir $output
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          if (!(Test-Path (Join-Path $output "report.json"))) {
+            throw "Missing generated report.json"
+          }
       - name: "📝 Set filename [${{ github.event.repository.name }}-${{runner.os}}-${{ runner.arch }}-${{ inputs.version || steps.java_info.outputs.project_version }}.exe]"
         id: "artifact"
         shell: sh

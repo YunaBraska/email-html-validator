@@ -172,7 +172,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>berlin.yuna.apidoccrafter.App</mainClass>
+                            <mainClass>berlin.yuna.ehv.cli.EmailHtmlValidatorCli</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
