@@ -15,10 +15,9 @@ jobs:
   release:
     permissions:
       contents: read
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_release.yml@ffbb4ba164d220d7d8da54483d11b843608facc6
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_release.yml@f6c362d9c539d7a028b816572d812e892072c50b
     with:
       semver_strategy: snapshot
-      submodules: true
 
   native:
     needs:
@@ -26,7 +25,7 @@ jobs:
     if: ${{ always() && !cancelled() && needs.release.result == 'success' }}
     permissions:
       contents: read
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_build_native.yml@ffbb4ba164d220d7d8da54483d11b843608facc6
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_build_native.yml@f6c362d9c539d7a028b816572d812e892072c50b
     with:
       ref: ${{ needs.release.outputs.commit_sha }}
       version: ${{ needs.release.outputs.version }}
@@ -40,7 +39,7 @@ jobs:
       actions: read
       contents: read
       deployments: write
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_central.yml@ffbb4ba164d220d7d8da54483d11b843608facc6
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_central.yml@f6c362d9c539d7a028b816572d812e892072c50b
     secrets:
       CENTRAL_USER: ${{ secrets.CENTRAL_USER }}
       CENTRAL_PASS: ${{ secrets.CENTRAL_PASS }}
@@ -57,7 +56,7 @@ jobs:
       contents: read
       deployments: write
       packages: write
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_github_packages.yml@ffbb4ba164d220d7d8da54483d11b843608facc6
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_github_packages.yml@f6c362d9c539d7a028b816572d812e892072c50b
 
   docker:
     needs:
@@ -69,8 +68,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_docker.yml@ffbb4ba164d220d7d8da54483d11b843608facc6
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_docker.yml@f6c362d9c539d7a028b816572d812e892072c50b
     with:
       ref: ${{ needs.release.outputs.commit_sha }}
       version: ${{ needs.release.outputs.version }}
-      dockerfile: Dockerfile_Native
