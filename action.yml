@@ -50,7 +50,7 @@ outputs:
     description: "Absolute path to report.md appended to the GitHub summary"
 runs:
   using: "docker"
-  image: "docker://ghcr.io/yunabraska/api-doc-crafter:latest"
+  image: "docker://ghcr.io/yunabraska/email-html-validator:latest"
   args:
     - ${{ inputs.source }}
   env:

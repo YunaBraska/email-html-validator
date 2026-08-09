@@ -38,8 +38,8 @@ Each interface shares the same reporting core and produces JSON, XML, HTML, and 
 Grab the latest binary from the [Releases page](https://github.com/YunaBraska/email-html-validator/releases) or build it
 yourself via `./mvnw package`. We publish:
 
-- `email-html-validator.jar` (portable JAR for any Java 21+ runtime)
-- `email-html-validator.native` (Linux x64, Linux arm64, macOS x64/arm64, Windows x64 via GraalVM)
+- versioned JAR, sources, and Javadocs (Java 21+)
+- native assets for Linux amd64/arm64, macOS arm64, and Windows x64
 - Docker image `ghcr.io/yunabraska/email-html-validator:<tag>`
 
 | Flag                           | Description                                                                        |
@@ -207,7 +207,7 @@ Want to contribute or run the full suite locally?
 
 - `./mvnw clean verify` – build the JAR, run CLI black-box tests, regenerate fixtures.
 - `./mvnw -q -DskipTests -Pnative package` – build a GraalVM binary (`target/email-html-validator.native`).
-- `Dockerfile` and `Dockerfile_Native` ship the CLI/native images used for releases.
+- `Dockerfile_Native` builds the release image.
 - BFSG tests expect Playwright browsers. Install them once via
   `./mvnw -B -q exec:java -Dexec.mainClass=com.microsoft.playwright.CLI -Dexec.args="install chromium --with-deps"` or set
   `PLAYWRIGHT_BROWSERS_PATH` to a cached location.

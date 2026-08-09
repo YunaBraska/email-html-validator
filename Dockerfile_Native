@@ -30,8 +30,8 @@ COPY .mvn ./.mvn
 COPY mvnw pom.xml ./
 
 # BUILD THE NATIVE IMAGE
-# [SYSTEM] docker build -t app-native -f Dockerfile .
-# [ARCH] docker buildx build --platform linux/amd64 -t app-native -f Dockerfile --load .
+# [SYSTEM] docker build -t app-native -f Dockerfile_Native .
+# [ARCH] docker buildx build --platform linux/amd64 -t app-native -f Dockerfile_Native --load .
 FROM copy_sources AS native_build
 
 ENV LC_ALL=en_US.UTF-8
@@ -41,14 +41,14 @@ ENV LANGUAGE=en_US.UTF-8
 RUN (chmod +x mvnw && JAVA_HOME="${GRAALVM_HOME}" ./mvnw clean package -B -q -DskipTests -Pnative)
 
 # USED TO EXPORT THE NATIVE IMAGE
-# [SYSTEM] docker build -t app-native -f Dockerfile . && docker build --target export . --output target
-# [ARCH] docker buildx build --platform linux/amd64 --output type=docker -t app-native -f Dockerfile . && docker buildx build --platform linux/arm64 --target export .  --output target
+# [SYSTEM] docker build -t app-native -f Dockerfile_Native . && docker build --target export . --output target
+# [ARCH] docker buildx build --platform linux/amd64 --output type=docker -t app-native -f Dockerfile_Native . && docker buildx build --platform linux/arm64 --target export .  --output target
 FROM scratch AS export
 COPY --from=native_build ./target/*.native ./app.native
 
 # RUN THE NATIVE IMAGE
-# [SYSTEM] docker build -t app-native -f Dockerfile . && docker run --rm -p 8080:8080 app-native
-# [ARCH] docker buildx build --platform linux/amd64 -t app-native -f Dockerfile --load . && docker run --rm -p 8080:8080 app-native
+# [SYSTEM] docker build -t app-native -f Dockerfile_Native . && docker run --rm -p 8080:8080 app-native
+# [ARCH] docker buildx build --platform linux/amd64 -t app-native -f Dockerfile_Native --load . && docker run --rm -p 8080:8080 app-native
 FROM debian:stable-slim AS native_image
 COPY --from=native_build ./target/*.native ./app.native
 

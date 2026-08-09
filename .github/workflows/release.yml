@@ -1,0 +1,110 @@
+# yuna-java-release
+name: 🏷️ CD · Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      maven_central:
+        description: Maven Central.
+        required: true
+        default: true
+        type: boolean
+      github_packages:
+        description: GitHub Packages.
+        required: true
+        default: true
+        type: boolean
+      docker:
+        description: Docker.
+        required: true
+        default: true
+        type: boolean
+      force:
+        description: Force.
+        required: true
+        default: false
+        type: boolean
+
+permissions: {}
+
+jobs:
+  release:
+    permissions:
+      contents: read
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_release.yml@3b330426cd94677510f22f88fa36880905239075
+    with:
+      force: ${{ inputs.force }}
+      dry_run: ${{ inputs.maven_central != true || inputs.github_packages != true || inputs.docker != true }}
+      submodules: true
+
+  native:
+    needs:
+      - release
+    if: ${{ always() && !cancelled() && needs.release.result == 'success' }}
+    permissions:
+      contents: read
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_build_native.yml@3b330426cd94677510f22f88fa36880905239075
+    with:
+      ref: ${{ needs.release.outputs.commit_sha }}
+      version: ${{ needs.release.outputs.version }}
+
+  central:
+    needs:
+      - release
+      - native
+    if: ${{ always() && !cancelled() && needs.release.result == 'success' && needs.native.result == 'success' }}
+    permissions:
+      actions: read
+      contents: read
+      deployments: write
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_central.yml@3b330426cd94677510f22f88fa36880905239075
+    secrets:
+      CENTRAL_USER: ${{ secrets.CENTRAL_USER }}
+      CENTRAL_PASS: ${{ secrets.CENTRAL_PASS }}
+      GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+  packages:
+    needs:
+      - release
+      - native
+    if: ${{ always() && !cancelled() && needs.release.result == 'success' && needs.native.result == 'success' }}
+    permissions:
+      actions: read
+      contents: read
+      deployments: write
+      packages: write
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_github_packages.yml@3b330426cd94677510f22f88fa36880905239075
+
+  github:
+    needs:
+      - release
+      - native
+      - central
+      - packages
+    if: ${{ always() && !cancelled() && needs.release.outputs.dry_run == 'false' && !endsWith(needs.release.outputs.version, '-SNAPSHOT') && needs.release.result == 'success' && needs.native.result == 'success' && needs.central.result == 'success' && needs.packages.result == 'success' }}
+    permissions:
+      actions: read
+      contents: write
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_create_github_release.yml@3b330426cd94677510f22f88fa36880905239075
+    with:
+      commit_sha: ${{ needs.release.outputs.commit_sha }}
+      version: ${{ needs.release.outputs.version }}
+      native_assets: true
+
+  docker:
+    needs:
+      - release
+      - native
+      - central
+      - packages
+      - github
+    if: ${{ always() && !cancelled() && needs.release.result == 'success' && needs.native.result == 'success' && needs.central.result == 'success' && needs.packages.result == 'success' && (needs.github.result == 'success' || endsWith(needs.release.outputs.version, '-SNAPSHOT')) }}
+    permissions:
+      contents: read
+      packages: write
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_docker.yml@3b330426cd94677510f22f88fa36880905239075
+    with:
+      ref: ${{ needs.release.outputs.commit_sha }}
+      version: ${{ needs.release.outputs.version }}
+      dockerfile: Dockerfile_Native
