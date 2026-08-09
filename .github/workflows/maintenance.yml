@@ -19,7 +19,7 @@ jobs:
       actions: write
       contents: write
       pull-requests: write
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_update_maven_wrapper.yml@0f9c8f378026d0956120b167cedd562b27df03e9
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_update_maven_wrapper.yml@ffbb4ba164d220d7d8da54483d11b843608facc6
     with:
       dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
 
