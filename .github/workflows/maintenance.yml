@@ -1,0 +1,91 @@
+name: 🛠️ CI · Maintenance
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Dry run.
+        required: true
+        default: true
+        type: boolean
+
+permissions: {}
+
+jobs:
+  maven_wrapper:
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_update_maven_wrapper.yml@3b330426cd94677510f22f88fa36880905239075
+    with:
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      - name: "🧑‍💻 Checkout"
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: "🔍 Read Java Info"
+        id: java_info
+        uses: YunaBraska/java-info-action@11a434ffbf6bb3357363d1933be71a4076a90a6b # v3
+
+      - name: "☕ Setup Java [${{ steps.java_info.outputs.java_version }}]"
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: ${{ steps.java_info.outputs.java_version }}
+          cache: maven
+
+      - name: "🧩 Align Playwright"
+        id: align
+        shell: sh
+        run: |
+          set -eu
+          chmod +x ./mvnw
+          ${{ steps.java_info.outputs.cmd }} -B -Dsync.playwright=true -Dtest=berlin.yuna.ehv.cli.PlaywrightVersionAlignmentTest test
+          changed=false
+          if ! git diff --quiet -- pom.xml; then
+            changed=true
+          fi
+          printf 'changed=%s\n' "${changed}" >> "${GITHUB_OUTPUT}"
+          printf 'changed=%s\n' "${changed}"
+
+      - name: "🔍 Read Pull Request"
+        id: existing
+        if: steps.align.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: sh
+        run: |
+          set -eu
+          pull_request=$(gh pr list --repo "${GITHUB_REPOSITORY}" --head bot/maintenance-playwright --state open --json number --jq '.[0].number // empty')
+          printf 'pull_request=%s\n' "${pull_request}" >> "${GITHUB_OUTPUT}"
+          printf 'pull_request=%s\n' "${pull_request:-none}"
+
+      - name: "📝 Create Pull Request"
+        if: ${{ steps.align.outputs.changed == 'true' && steps.existing.outputs.pull_request == '' && (github.event_name != 'workflow_dispatch' || inputs.dry_run != true) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: sh
+        run: |
+          set -eu
+          branch=bot/maintenance-playwright
+          git config user.name 'Kira Bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "${branch}"
+          git add -- pom.xml
+          git commit -m 'build: align Playwright'
+          git push origin "${branch}"
+          gh pr create --repo "${GITHUB_REPOSITORY}" --base "${{ github.event.repository.default_branch }}" --head "${branch}" --title 'build: align Playwright' --body 'Aligns Playwright with axe-core.'
+          gh workflow run build-pr.yml --repo "${GITHUB_REPOSITORY}" --ref "${branch}" -f ref="${branch}"

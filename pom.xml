@@ -6,7 +6,7 @@
 
     <groupId>berlin.yuna</groupId>
     <artifactId>email-html-validator</artifactId>
-    <version>2026.08.2192057</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <name>email-html-validator</name>
@@ -39,6 +39,7 @@
         <project.encoding>UTF-8</project.encoding>
         <project.build.sourceEncoding>${project.encoding}</project.build.sourceEncoding>
         <project.reporting.outputEncoding>${project.encoding}</project.reporting.outputEncoding>
+        <project.build.outputTimestamp>1980-01-01T00:00:02Z</project.build.outputTimestamp>
 
         <!-- Runtime deps -->
         <jsoup.version>1.23.1</jsoup.version>
@@ -54,15 +55,14 @@
         <!-- Build plugins -->
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
-        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
-        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
-        <maven-scm-plugin.version>1.11.2</maven-scm-plugin.version>
+        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+        <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
         <native-maven-plugin.version>0.10.2</native-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
-        <central-publishing-maven-plugin.version>0.9.0</central-publishing-maven-plugin.version>
+        <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -120,16 +120,21 @@
     </dependencyManagement>
 
     <build>
-        <finalName>${project.name}-no-dependencies</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
                     <release>${java.version}</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <configuration>
+                    <outputTimestamp>${project.build.outputTimestamp}</outputTimestamp>
                 </configuration>
             </plugin>
             <plugin>
@@ -143,6 +148,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <release>${java.version}</release>
                             <nodeprecatedlist>true</nodeprecatedlist>
                             <quiet>true</quiet>
                             <!-- disable strict checking -->
@@ -172,7 +178,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>berlin.yuna.apidoccrafter.App</mainClass>
+                            <mainClass>berlin.yuna.ehv.cli.EmailHtmlValidatorCli</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -184,11 +190,10 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <finalName>${project.name}</finalName>
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
-                            <appendAssemblyId>false</appendAssemblyId>
+                            <appendAssemblyId>true</appendAssemblyId>
                         </configuration>
                     </execution>
                 </executions>
@@ -321,17 +326,9 @@
                 </plugins>
             </build>
         </profile>
-    <!-- MAVEN CENTRAL USAGE -->
         <profile>
-            <!-- mvn clean deploy -P release -->
-            <id>release</id>
-            <activation>
-                <property>
-                    <name>release</name>
-                    <value>true</value>
-                </property>
-                <activeByDefault>false</activeByDefault>
-            </activation>
+            <!-- Maven Central only: mvn clean deploy -P central -->
+            <id>central</id>
             <build>
                 <plugins>
                     <!-- QUALITY GATE -->
@@ -368,6 +365,7 @@
                         <configuration>
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
                             <deploymentName>${project.groupId}:${project.artifactId}:${project.version}</deploymentName>
                             <!--                                <ignorePublishedComponents>true</ignorePublishedComponents>-->
                         </configuration>
