@@ -62,9 +62,7 @@ jobs:
     needs:
       - release
       - native
-      - central
-      - packages
-    if: ${{ always() && !cancelled() && needs.release.result == 'success' && needs.native.result == 'success' && needs.central.result == 'success' && needs.packages.result == 'success' }}
+    if: ${{ always() && !cancelled() && needs.release.result == 'success' && needs.native.result == 'success' }}
     permissions:
       contents: read
       packages: write

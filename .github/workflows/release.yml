@@ -81,7 +81,8 @@ jobs:
       - native
       - central
       - packages
-    if: ${{ always() && !cancelled() && needs.release.outputs.dry_run == 'false' && !endsWith(needs.release.outputs.version, '-SNAPSHOT') && needs.release.result == 'success' && needs.native.result == 'success' && needs.central.result == 'success' && needs.packages.result == 'success' }}
+      - docker
+    if: ${{ always() && !cancelled() && needs.release.outputs.dry_run == 'false' && !endsWith(needs.release.outputs.version, '-SNAPSHOT') && needs.release.result == 'success' && needs.native.result == 'success' && needs.central.result == 'success' && needs.packages.result == 'success' && needs.docker.result == 'success' }}
     permissions:
       actions: read
       contents: write
@@ -94,10 +95,7 @@ jobs:
     needs:
       - release
       - native
-      - central
-      - packages
-      - github
-    if: ${{ always() && !cancelled() && needs.release.result == 'success' && needs.native.result == 'success' && needs.central.result == 'success' && needs.packages.result == 'success' && (needs.github.result == 'success' || endsWith(needs.release.outputs.version, '-SNAPSHOT')) }}
+    if: ${{ always() && !cancelled() && needs.release.result == 'success' && needs.native.result == 'success' }}
     permissions:
       contents: read
       packages: write
