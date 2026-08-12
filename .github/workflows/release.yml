@@ -97,6 +97,7 @@ jobs:
       - native
     if: ${{ always() && !cancelled() && needs.release.result == 'success' && needs.native.result == 'success' }}
     permissions:
+      actions: read
       contents: read
       packages: write
     uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_docker.yml@3b2831f382fb95382784ea029881a32cbc1b8450
