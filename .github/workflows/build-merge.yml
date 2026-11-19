@@ -15,9 +15,8 @@ jobs:
   release:
     permissions:
       contents: read
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_release.yml@f122a3096e6ac9b674320772242bc6d47cf396c7
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_release.yml@64ded0126229fc7bb53ffa1cbd3b8ce1ce2ed80c
     with:
-      semver_strategy: snapshot
 
   native:
     needs:
@@ -25,7 +24,7 @@ jobs:
     if: ${{ always() && !cancelled() && needs.release.result == 'success' }}
     permissions:
       contents: read
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_build_native.yml@f122a3096e6ac9b674320772242bc6d47cf396c7
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_build_native.yml@64ded0126229fc7bb53ffa1cbd3b8ce1ce2ed80c
     with:
       ref: ${{ needs.release.outputs.commit_sha }}
       version: ${{ needs.release.outputs.version }}
@@ -39,7 +38,7 @@ jobs:
       actions: read
       contents: read
       deployments: write
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_central.yml@f122a3096e6ac9b674320772242bc6d47cf396c7
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_central.yml@64ded0126229fc7bb53ffa1cbd3b8ce1ce2ed80c
     secrets:
       CENTRAL_USER: ${{ secrets.OSSH_USER }}
       CENTRAL_PASS: ${{ secrets.OSSH_PASS }}
@@ -56,7 +55,7 @@ jobs:
       contents: read
       deployments: write
       packages: write
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_github_packages.yml@f122a3096e6ac9b674320772242bc6d47cf396c7
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_github_packages.yml@64ded0126229fc7bb53ffa1cbd3b8ce1ce2ed80c
 
   docker:
     needs:
@@ -67,6 +66,6 @@ jobs:
       actions: read
       contents: read
       packages: write
-    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_docker.yml@f122a3096e6ac9b674320772242bc6d47cf396c7
+    uses: YunaBraska/YunaBraska/.github/workflows/wc_java_publish_docker.yml@64ded0126229fc7bb53ffa1cbd3b8ce1ce2ed80c
     with:
       version: ${{ needs.release.outputs.version }}
